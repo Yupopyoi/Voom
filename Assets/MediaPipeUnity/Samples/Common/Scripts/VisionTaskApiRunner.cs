@@ -4,6 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+// Copyright (c) 2025 Yupopyoi
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
 using System.Collections;
 using UnityEngine;
 
@@ -55,6 +61,14 @@ namespace Mediapipe.Unity.Sample
     {
       annotationController.isMirrored = expectedToBeMirrored;
       annotationController.imageSize = new Vector2Int(imageSource.textureWidth, imageSource.textureHeight);
+    }
+
+    public void OnChangedCameraDevice(int id = 1)
+    {
+        Stop();
+        var imageSource = ImageSourceProvider.ImageSource;
+        imageSource.SelectSource(id);
+        Play();
     }
   }
 }

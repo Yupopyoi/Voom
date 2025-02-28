@@ -4,6 +4,16 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+// Copyright (c) 2025 Yupopyoi
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+using System.Collections;
+using System.Diagnostics;
+using UnityEngine.UIElements;
+
 namespace Mediapipe.Unity.Sample
 {
   public static class ImageSourceProvider
@@ -13,6 +23,8 @@ namespace Mediapipe.Unity.Sample
     private static VideoSource _VideoSource;
 
     public static ImageSource ImageSource { get; private set; }
+
+    public static string[] WebCamList => _WebCamSource.sourceCandidateNames;
 
     public static ImageSourceType CurrentSourceType
     {
