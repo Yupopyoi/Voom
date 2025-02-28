@@ -214,6 +214,34 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.vrmc.gltf": {
+      "version": "https://github.com/vrm-c/UniVRM.git?path=/Assets/UniGLTF#v0.128.2",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.modules.animation": "1.0.0"
+      },
+      "hash": "b54537678fdced604931fd3229a83c69860fbc12"
+    },
+    "com.vrmc.univrm": {
+      "version": "https://github.com/vrm-c/UniVRM.git?path=/Assets/VRM#v0.128.2",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.vrmc.gltf": "0.128.2",
+        "com.unity.ugui": "1.0.0"
+      },
+      "hash": "b54537678fdced604931fd3229a83c69860fbc12"
+    },
+    "com.vrmc.vrm": {
+      "version": "https://github.com/vrm-c/UniVRM.git?path=/Assets/VRM10#v0.128.2",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.vrmc.gltf": "0.128.2"
+      },
+      "hash": "b54537678fdced604931fd3229a83c69860fbc12"
+    },
     "jp.keijiro.klak.spout": {
       "version": "2.0.3",
       "depth": 0,
