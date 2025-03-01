@@ -76,7 +76,7 @@ namespace Mediapipe.Allocator
 
             _landmarks = Enumerable.Repeat(new Tasks.Components.Containers.NormalizedLandmark(), 33).ToList();
 
-            _chestPacket = new(_landmarks, new int[2] { 0, 15 });
+            _chestPacket = new(_landmarks, new int[2] { 11, 12 });
             _chestAdapter = new(_allChildren.FirstOrDefault(obj => obj.name.Contains("Chest")), _chestPacket);
         }
 
