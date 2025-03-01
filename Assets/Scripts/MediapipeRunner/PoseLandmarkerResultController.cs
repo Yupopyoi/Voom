@@ -50,11 +50,6 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
             if (_currentTarget.poseLandmarks != null)
             {
                 onPoseTargetUpdated?.Invoke(_currentTarget);
-
-                if (_currentTarget.poseLandmarks?.Count > 0)
-                {
-                    Debug.Log(_currentTarget.poseLandmarks[0].landmarks[0]); // landmarks[0] = nose
-                }
             }
         }
     }
