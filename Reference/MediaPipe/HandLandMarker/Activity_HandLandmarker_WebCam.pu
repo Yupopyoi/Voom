@@ -1,0 +1,19 @@
+@startuml Activity_HandLandmarker_WebCam
+
+title Web Camera Activity at HandLandmarkerRunner Class 
+
+(*) -down-> Receives an ImageSource instance \n from the static class ImageSourceProvider
+
+note right : Actually, it is passed WebCamSource, \nwhich inherits from ImageSource.
+
+-down-> Initialize Screen by screen.Initialize()
+
+if canUseGPU then 
+ --> [true] Obtain a source image using GPU
+ --> Detect using DetectAsync()
+else
+ --> [false] Obtain a source image using CPU
+ --> Detect using DetectAsync()
+endif
+
+@enduml

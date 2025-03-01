@@ -1,0 +1,37 @@
+@startuml Sequence_HandLandmarker_Display
+
+title Display Result and Web Camera Source
+
+== Get detection results==
+
+HandLandmarkerRunner -> HandLandmarkerRunner : OnHandLandmarkDetectionOutput(result)
+
+HandLandmarkerRunner -> HandLandmarkerResultAnnotationController : DrawLater(result)
+
+HandLandmarkerResultAnnotationController -> HandLandmarkerResultAnnotationController : UpdateCurrentTarget(result)
+
+HandLandmarkerResultAnnotationController -> HandLandmarkerResultAnnotationController : Clone result to _currentTarget
+
+note left : _currentTarget holds the latest detection results
+
+== Drow detection results==
+
+HandLandmarkerResultAnnotationController -> HandLandmarkerResultAnnotationController : LateUpdate()
+
+HandLandmarkerResultAnnotationController -> HandLandmarkerResultAnnotationController : SyncNow()
+
+note right : Details are omitted.
+
+== Display Web Camera Source==
+
+HandLandmarkerRunner -> HandLandmarkerRunner : StartCoroutine(Run())
+
+note right : See "Sequence_HandLandmarker_Source"
+
+HandLandmarkerRunner -> Screen : Initialize(imageSource)
+
+Screen -> Screen : imageSource.GetCurrentTexture()
+
+note left : Set Texture to RawImage
+
+@enduml

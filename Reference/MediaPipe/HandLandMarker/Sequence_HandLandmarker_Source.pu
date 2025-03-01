@@ -1,0 +1,63 @@
+@startuml Sequence_HandLandmarker_Source
+
+title Establish WebCamSource
+
+== Find Or Generate Bootstrap==
+
+HandLandmarkerRunner -> HandLandmarkerRunner : Start()
+HandLandmarkerRunner -> HandLandmarkerRunner : FindBootstrap()
+
+note left : Generate the Bootstrap object \nif it does not exist.
+
+== Bootstrap==
+
+Bootstrap -> Bootstrap : OnEnable()
+Bootstrap -> Bootstrap : StartCoroutine(Init())
+
+Bootstrap -> AppSettings : ResetGlogFlags()
+
+note left : Glog = Google log
+
+Bootstrap -> Bootstrap : DecideInferenceMode()
+
+note left : CPU is always specified \nfor macOS or Windows
+
+alt inferenceMode == GPU
+
+Bootstrap -> GpuManager : Initialize()
+
+end
+
+Bootstrap -> AppSettings : BuildWebCamSource()
+
+note left : Instantiate WebCamSource
+
+Bootstrap <-- AppSettings : WebCamSource
+
+note left : Similarly, the Bootstrap receives \na static image and a video
+
+Bootstrap -> ImageSourceProvider : Initialize(WebCamSource, StaticImageSource, VideoSource)
+
+Bootstrap -> AppSettings : defaultImageSource()
+
+Bootstrap <-- AppSettings : defaultImageSource
+
+note left : This is 0 for WebCamera
+
+Bootstrap -> ImageSourceProvider : Switch(defaultImageSource)
+
+ImageSourceProvider ->  ImageSourceProvider :  Specify WebCamSource \nas ImageSource
+
+== Recieve ImageSource==
+
+HandLandmarkerRunner -> HandLandmarkerRunner : Play()
+
+HandLandmarkerRunner -> HandLandmarkerRunner : StartCoroutine(Run())
+
+HandLandmarkerRunner -> ImageSourceProvider : Access to ImageSource
+
+HandLandmarkerRunner <-- ImageSourceProvider : ImageSource
+
+note left : Actually receives WebCamSource, \nwhich inherits from ImageSource.
+
+@enduml

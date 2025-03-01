@@ -1,0 +1,208 @@
+@startuml Classes_HandLandmarker
+
+title MediaPipe Unity Plugin HandLandmarker
+
+hide empty members
+
+Object <|-- Component
+Object <|-- ScriptableObject
+Component <|-- Behaviour
+Behaviour <|-- MonoBehaviour
+
+MonoBehaviour <|-- ImageSource
+
+MonoBehaviour <|-- AnnotationController
+
+abstract class AnnotationController{
+    #Start() : void
+    #LateUpdate() : void
+    #{abstract}SyncNow() : void
+}
+
+AnnotationController <|-- HandLandmarkerResultAnnotationController
+
+class HandLandmarkerResultAnnotationController{
+    +DrawLater() : void
+    #UpdateCurrentTarget() : void
+    #SyncNow() : void
+}
+
+MonoBehaviour <|-- HierarchicalAnnotation
+IHierachicalAnnotation <|.. HierarchicalAnnotation
+
+Interface IHierachicalAnnotation{}
+
+abstract class HierarchicalAnnotation{}
+
+HierarchicalAnnotation <|-- ListAnnotation
+
+abstract class ListAnnotation{}
+
+ListAnnotation <|-- MultiHandLandmarkListAnnotation
+
+class MultiHandLandmarkListAnnotation{
+  +Draw() : void
+}
+
+abstract class ImageSource{
+  +{abstract}SelectSource() : void
+  +{abstract}Play() : IEnumerator
+  +{abstract}Resume() : IEnumerator
+  +{abstract}Pause() : void
+  +{abstract}Stop() : void
+  +{abstract}GetCurrentTexture() : Texture
+}
+
+ImageSource <|-- WebCamSource
+
+class WebCamSource{
+  -_webCamTexture : WebCamTexture
+  +SelectSource() : void
+  +Play() : IEnumerator
+  +Resume() : IEnumerator
+  +Pause() : void
+  +Stop() : void
+  +GetCurrentTexture() : Texture
+}
+
+Interface IDisposable
+
+IDisposable <|.. BaseVisionTaskApi
+
+MonoBehaviour <|-- BaseRunner
+
+abstract class BaseRunner {
+ -_BootstrapName : string
+ -_bootstrapPrefab : GameObject
+ #bootstrap : Bootstrap
+ #isPaused : bool
+ #{abstract}Start() : IEnumerator
+ +{abstract}Play() : void
+ +{abstract}Pause() : void
+ +{abstract}Resume() : void
+ +{abstract}Stop() : void
+ #GetCurrentTimestampMillisec() : long
+ #FindBootstrap() : Bootstrap
+}
+
+Bootstrap <.. BaseRunner 
+
+MonoBehaviour <|-- Bootstrap
+
+class Bootstrap {
+ -_appSettings : AppSettings
+ +inferenceMode : InferenceMode
+ +isFinished : bool
+ -_isGlogInitialize : bool
+ -OnEnable() : void
+ -Init() : IEnumerator
+ -DecideInferenceMode() : void
+ -OnApplicationQuit() : void
+}
+
+ImageSourceProvider <.. Bootstrap
+
+static class ImageSourceProvider{
+  +{static}ImageSource : ImageSource
+  +{static}CurrentSourceType : ImageSourceType
+  ~{static}Initialize() : void
+  ~{static}Switch() : void
+}
+
+AppSettings <.. Bootstrap
+ScriptableObject <|-- AppSettings
+
+class AppSettings{
+  +BuildWebCamSource() : WebCamSource
+}
+
+MonoBehaviour <|-- Screen
+
+class Screen{
+  -_screen : RawImage
+  +texture : Texture
+  +Initialize() : void
+  +Resize() : void
+  +Rotate() : void
+  +ReadSync() : void
+}
+
+BaseRunner <|-- VisionTaskApiRunner
+
+HandLandmarker <.. VisionTaskApiRunner
+
+IDisposable <|.. DisposableObject
+
+abstract class DisposableObject{}
+
+DisposableObject <|-- MpResourceHandle
+
+abstract class MpResourceHandle{
+  #AssertStatusOk() : void
+}
+
+class UnsafeNativeMethods{
+  +mp_tasks_core_TaskRunner__Process__Ppm() : MpReturnCode
+  +mp_tasks_core_TaskRunner__Send__Ppm() : MpReturnCode
+}
+
+MpResourceHandle <|-- TaskRunner
+MpResourceHandle <|-- PacketMap
+UnsafeNativeMethods <.. TaskRunner
+PacketMap <.. TaskRunner
+
+class TaskRunner{
+  +Create() : TaskRunner
+  +Process() : PacketMap
+  +Send() : void
+  +Close() : void
+  +Restart() : void
+  +GetGraphConfig() : CalculatorGraphConfig
+}
+
+BaseVisionTaskApi <|-- HandLandmarker
+TaskRunner <.. BaseVisionTaskApi
+
+class BaseVisionTaskApi{
+  #SendLiveStreamData() : void
+}
+
+abstract class VisionTaskApiRunner{
+ #screen : Screen
+ +runningMode : RunningMode
+ +Play() : void
+ +Pause() : void
+ +Resume() : void
+ +Stop() : void
+ #{abstract}Run() : IEnumerator
+ #SetupAnnotationController() : void
+}
+
+VisionTaskApiRunner <|-- HandLandmarkerRunner
+
+HandLandmarkerResultAnnotationController <.. HandLandmarkerRunner
+
+MultiHandLandmarkListAnnotation <.. HandLandmarkerResultAnnotationController
+
+HandLandmarker <.. HandLandmarkerRunner
+ImageSourceProvider <.. HandLandmarkerRunner
+Screen <.. HandLandmarkerRunner
+WebCamSource <.. ImageSourceProvider
+
+class HandLandmarker{
+  +DetectAsync() : void
+  -BuildPacketsCallback() : Tasks.Core.TaskRunner.PacketsCallback
+  -TryBuildHandLandmarkerResult() : bool
+  +CreateFromOptions() : HandLandmarker
+}
+
+class HandLandmarkerRunner{
+  +config : HandLandmarkDetectionConfig
+  +Stop() : void
+  #Run() : IEnumerator
+  -OnHandLandmarkDetectionOutput() : void
+}
+
+note left: Attach to an empty object.
+
+@enduml
