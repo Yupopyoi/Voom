@@ -11,10 +11,10 @@
 // https://opensource.org/licenses/MIT.
 
 using System.Collections;
-using Mediapipe.Tasks.Vision.PoseLandmarker;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+using Mediapipe.Tasks.Vision.PoseLandmarker;
 using Mediapipe.Unity;
 using Mediapipe.Unity.Sample;
 using Mediapipe.Unity.Sample.PoseLandmarkDetection;

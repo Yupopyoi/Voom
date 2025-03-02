@@ -5,9 +5,11 @@
 // https://opensource.org/licenses/MIT.
 
 using System.Collections;
-using Mediapipe.Tasks.Vision.FaceDetector;
+
 using UnityEngine;
 using UnityEngine.Rendering;
+
+using Mediapipe.Tasks.Vision.FaceDetector;
 using FaceDetectionResult = Mediapipe.Tasks.Components.Containers.DetectionResult;
 
 namespace Mediapipe.Unity.Sample.FaceDetection
