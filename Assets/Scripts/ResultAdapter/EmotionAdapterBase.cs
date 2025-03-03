@@ -16,14 +16,10 @@ namespace Mediapipe.Allocator
         protected LandmarksPacket _landmarksPacket;
         protected bool[] _unfixAxis = new bool[3];
 
-        public static int CacheSize { get; private set; } = 30;
-        private readonly Queue<Vector3> _rotationCache;
-
         protected EmotionAdapterBase(GameObject faceObject, LandmarksPacket landmarksPacket)
         {
             _faceObject = faceObject;
             _landmarksPacket = landmarksPacket;
-            _rotationCache = new(capacity: CacheSize);
 
             _skinnedMeshRenderer = _faceObject.GetComponent<SkinnedMeshRenderer>();
         }
@@ -46,12 +42,6 @@ namespace Mediapipe.Allocator
             }
         }
 
-        public void ChangeCacheSize(int size)
-        {
-            if (size < 0) return;
-            CacheSize = size;
-        }
-
         protected void LandmarkLog(int index)
         {
             if (index < _landmarksPacket.Capacity)
@@ -69,12 +59,12 @@ namespace Mediapipe.Allocator
             return (diffVector.x * diffVector.x + diffVector.y * diffVector.y) * 1000.0f;
         }
 
-        protected float BindControlValue(float source /* [0 - 1] */, float scale = 1.0f)
+        protected float BindControlValue(float source /* [0 - 1] */, float scale, float maxValue = 100.0f)
         {
             source *= scale;
             source = Mathf.Clamp01(source);
 
-            return source * 100.0f;
+            return source * maxValue;
         }
 
         public abstract void ForwardApply();

@@ -38,7 +38,7 @@ namespace Mediapipe.Allocator
 
             _landmarks = Enumerable.Repeat(new Tasks.Components.Containers.NormalizedLandmark(), 478).ToList();
 
-            _mouthPacket = new(_landmarks, new int[10] { 13, 14, 306, 78, 311, 81, 402, 178, 468, 473 });
+            _mouthPacket = new(_landmarks, new int[13] { 13, 14, 306, 78, 311, 81, 402, 178, 17, 473, 468, 334, 105 });
             _mouthAdapter = new(_vrmObject.transform.Find("Face")?.gameObject, _mouthPacket);
         }
 
