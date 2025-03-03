@@ -19,7 +19,6 @@ using Mediapipe.Tasks.Vision.FaceLandmarker;
 using Mediapipe.Unity;
 using Mediapipe.Unity.Sample;
 using Mediapipe.Unity.Sample.FaceLandmarkDetection;
-using Mediapipe.UnityRunner.PoseLandmarkDetection;
 
 namespace Mediapipe.UnityRunner.FaceLandmarkDetection
 {
