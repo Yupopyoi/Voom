@@ -13,15 +13,16 @@ namespace Mediapipe.Allocator
         public MouthAdapter(GameObject faceObject, LandmarksPacket landmarksPacket)
             : base(faceObject, landmarksPacket) { }
 
-        public float OverallOperatingScale { get; set; } = 0.8f;
+        public float OverallOperatingScale { get; set; } = 0.9f;
         public float VerticalOpenScale { get; set; } = 1.4f;
         public float HorizontalMouthSizeScale { get; set; } = 1.6f;
         public float HorizontalOpenScale { get; set; } = 0.5f;
         public float MouthSizeOffset { get; set; } = 0.2f;
+        public float AnglyScale { get; set; } = 3.0f;
         public float SurpriseEyebrowOffset { get; set; } = 0.7f;
         public float SurpriseEyebrowScale { get; set; } = 1.0f;
 
-        /*  [Landmark Index]
+        /* ### Landmark Index
 
             | Index | MP Index |              Part             |
             |:-----:|:--------:|:-----------------------------:|
@@ -42,7 +43,7 @@ namespace Mediapipe.Allocator
             |  12   |   105    |    Center of Right eyebrow    |
          */
 
-        /*  [Controlling Parameters]
+        /* ### Controlling Parameters
                 
             | Index |  Parameter's Name  |                     Description                    |
             |:-----:|:------------------:|:--------------------------------------------------:|
@@ -132,7 +133,7 @@ namespace Mediapipe.Allocator
 
             _skinnedMeshRenderer.SetBlendShapeWeight(32, funnyValue * OverallOperatingScale);
 
-            _skinnedMeshRenderer.SetBlendShapeWeight(28, anglyValue * OverallOperatingScale);
+            _skinnedMeshRenderer.SetBlendShapeWeight(28, anglyValue * OverallOperatingScale * AnglyScale);
 
             #endregion
         }
