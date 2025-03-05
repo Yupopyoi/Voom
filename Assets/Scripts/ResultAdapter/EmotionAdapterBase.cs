@@ -15,6 +15,9 @@ namespace Mediapipe.Allocator
         protected LandmarksPacket _landmarksPacket;
         protected bool[] _unfixAxis = new bool[3];
 
+        protected const float MeshInputMax = 100.0f;
+        protected const float MeshInputMin =   0.0f;
+
         protected EmotionAdapterBase(GameObject faceObject, LandmarksPacket landmarksPacket)
         {
             _faceObject = faceObject;
@@ -58,12 +61,29 @@ namespace Mediapipe.Allocator
             return (diffVector.x * diffVector.x + diffVector.y * diffVector.y) * 1000.0f;
         }
 
-        protected float BindControlValue(float source /* [0 - 1] */, float scale, float maxValue = 100.0f)
+        protected float BindControlValue(float source /* [0 - 1] */, float scale = 1.0f, float maxValue = 100.0f)
         {
             source *= scale;
             source = Mathf.Clamp01(source);
 
             return source * maxValue;
+        }
+
+        protected float Sigmoid(float x, float a, float b, float k = 0.1f) /* x = [ a , b ] */
+        {
+            float c = (b + a) * 0.5f;
+            if(k == default)
+            {
+                k = 8.0f / (b - a);
+            }
+
+            float exp = -k * (x - c);
+            return 100.0f / (1.0f + Mathf.Exp(exp));
+        }
+
+        protected float Sigmoid(float x, float k = 0.1f) /* x = [ 0 , 100 ] */
+        {
+            return Sigmoid(x, 0.0f, 100.0f, k);
         }
 
         public abstract void ForwardApply();

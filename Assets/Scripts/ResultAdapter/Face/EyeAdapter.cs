@@ -4,6 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using UnityEngine;
 
 namespace Mediapipe.Allocator
@@ -13,25 +16,49 @@ namespace Mediapipe.Allocator
         public EyeAdapter(GameObject faceObject, LandmarksPacket landmarksPacket)
             : base(faceObject, landmarksPacket) { }
 
-        bool KeepBothEyesSameMovement { get; set; } = true;
+        #region General Properties
 
-        bool HideEyeHighlight { get; set; } = false;
+        // True makes the right eye close the same amount as the left eye.
+        // This makes VRM Model's eyes less unnatural, but VRM Model won't be able to wink.Å@
+        public bool KeepBothEyesSameMovement { get; set; } = true;
 
-        float ClosedEyeSize { get; set; } = 0.3f;
+        public bool AlwaysDisplayEyeHighlight { get; set; } = true;
 
-        float EyeSizeScale { get; set; } = 1.5f;
+        public bool CanModifyEyeHighlight { get; set; } = true;
 
-        float ClosedEyeOffset { get; set; } = 0.3f;
+        // The larger this number, the larger the program will recognize your eyes.
+        // This variable is used to adjust for eye size, which varies by person.
+        public float EyeSizeScale { get; set; } = 1.0f;
 
-        int JoySorrowBorder { get; set; } = 90;
+        // This number indicates the ease of closing the eye.
+        // When you want to be able to close eyes, this value should be greater than 1.
+        // This makes VRM Model closer to actual human movement.
+        // On the other hand, if you do not want to close eyes completely, this value should be less than 1.
+        public float EaseOfClosingEyes = 1.6f;
 
-        int SpreadFinishBorder { get; set; } = 200;
+        // The larger the number, the easier it is to express surprise.
+        public float SurprisedEyeSizeClampFactor { get; set; } = 1.0f;
 
-        float SurprisedMaxValue { get; set; } = 40.0f;
+        // The larger this value is, the more emphasis the expression of surprise is given.
+        public float ExpressionSurpriseMax { get; set; } = 100.0f;
 
         public float AnglyEyebrowOffset { get; set; } = 0.5f;
 
-        public float AnglyEyebrowScale { get; set; } = 1.0f;
+        // Variables for the impression of half-open eyes.
+        // around 0.0 : Cute impression
+        // around 3.0 : Easy to make disgusted eyes, pity impression
+        public float AnglyEyebrowScale { get; set; } = 3.0f;
+
+        #endregion
+
+        #region Advanced Properties
+
+        public float BorderBetweenJoyAndSorrow { get; set; } = 80.0f;
+        public float MaxAmountOfEyeClosuresUsingSorrow { get; set; } = 90.0f;
+        public float GradientOfSurpriseAmountSigmoid { get; set; } = 0.12f;
+        public float GradientOfOpenCloseAmountSigmoid { get; set; } = 0.08f;
+
+        #endregion
 
         /* ### Landmark Index
 
@@ -70,15 +97,25 @@ namespace Mediapipe.Allocator
 
          */
 
+        readonly float[] _openedAmount = new float[2];
+        readonly float[] _closedAmount = new float[2];
+        readonly float[] _joyValue = new float[2];
+        readonly float[] _sorrowValue = new float[2];
+        float _spreadValue;
+        float _surprisedValue;
+        float _anglyValue;
+
+        readonly float[] _eyeControlValues = new float[6];
+        public ReadOnlyCollection<float> GetEyeControlValues()
+        {
+            return Array.AsReadOnly(_eyeControlValues);
+        }
+
         public override void ForwardApply()
         {
-            if(HideEyeHighlight)
+            if (AlwaysDisplayEyeHighlight)
             {
-                _skinnedMeshRenderer.SetBlendShapeWeight(24, 100.0f);
-            }
-            else
-            {
-                _skinnedMeshRenderer.SetBlendShapeWeight(24,   0.0f);
+                _skinnedMeshRenderer.SetBlendShapeWeight(24, 0.0f);
             }
 
             Vector3 binocularVector = Landmark(0) - Landmark(1);
@@ -95,88 +132,69 @@ namespace Mediapipe.Allocator
                 return;
             }
 
-            #region Right eye measurement
+            #region Close / Open
 
-            Vector3 VerticalRightEyeVector = Landmark(3) - Landmark(2);
-            float verticalRightEyeLength = PlaneDistance(VerticalRightEyeVector);
-
-            float verticalRightEyeValue = (verticalRightEyeLength - ClosedEyeSize * 0.1f) / binocularDistance;
-
-            float verticalRightEyeOverallInput = 100.0f - BindControlValue(verticalRightEyeValue, EyeSizeScale * 10.0f);
-
-            float rightJoyValue;
-            float rightSorrowValue;
-            float right_a;
-
-            if (verticalRightEyeOverallInput < JoySorrowBorder)
+            float OpenedAmount(int eyeIndex)
             {
-                rightJoyValue = 0.0f;
+                Vector3 VerticalEyeVector;
+                if (eyeIndex == 0) /* Right Eye */
+                {
+                    VerticalEyeVector = Landmark(3) - Landmark(2);
+                }
+                else /* Left Eye */
+                {
+                    VerticalEyeVector = Landmark(5) - Landmark(4);
+                }
 
-                right_a = -100.0f / (JoySorrowBorder * JoySorrowBorder);
-            }
-            else
-            {
-                rightJoyValue = (verticalRightEyeOverallInput - JoySorrowBorder) * 100.0f / (100.0f - JoySorrowBorder);
+                float verticalEyeLength = PlaneDistance(VerticalEyeVector);
 
-                right_a = -100.0f / ((JoySorrowBorder - 100.0f) * (JoySorrowBorder - 100.0f));
+                return verticalEyeLength / binocularDistance * EyeSizeScale * 20.0f;
             }
 
-            // y = a(x - JoySorrowBorder)^2 + c
-            rightSorrowValue = right_a * (verticalRightEyeOverallInput - JoySorrowBorder) * (verticalRightEyeOverallInput - JoySorrowBorder) + 100.0f;
-
-            #endregion
-
-            #region Left eye measurement
-
-            Vector3 VerticalLeftEyeVector = Landmark(5) - Landmark(4);
-            float verticalLeftEyeLength = PlaneDistance(VerticalLeftEyeVector);
-                          
-            float verticalLeftEyeValue = (verticalLeftEyeLength - ClosedEyeSize * 0.1f) / binocularDistance;
-                          
-            float verticalLeftEyeOverallInput = 100.0f - BindControlValue(verticalLeftEyeValue, EyeSizeScale * 10.0f);
-
-            float leftJoyValue;
-            float leftSorrowValue;
-            float left_a;
-
-            if (verticalLeftEyeOverallInput < JoySorrowBorder)
+            for (int eyeIndex = 0; eyeIndex < 2; eyeIndex++) /* 0 : Right Eye, 1 : Left Eye */
             {
-                leftJoyValue = 0.0f;
+                _openedAmount[eyeIndex] = OpenedAmount(eyeIndex);
+                _closedAmount[eyeIndex] = BindControlValue(1.0f - _openedAmount[eyeIndex]);
 
-                left_a = -100.0f / (JoySorrowBorder * JoySorrowBorder);
+                // Joy
+                _joyValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex], BorderBetweenJoyAndSorrow, MeshInputMax, GradientOfOpenCloseAmountSigmoid) * EaseOfClosingEyes;
+
+                // Sorrow
+                if(_closedAmount[eyeIndex] < BorderBetweenJoyAndSorrow)
+                {
+                    _sorrowValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex], MeshInputMin, BorderBetweenJoyAndSorrow, GradientOfOpenCloseAmountSigmoid);
+                }
+                else
+                {
+                    _sorrowValue[eyeIndex] = MeshInputMax - Sigmoid(_closedAmount[eyeIndex], BorderBetweenJoyAndSorrow, MaxAmountOfEyeClosuresUsingSorrow, GradientOfOpenCloseAmountSigmoid);
+                }
             }
-            else
-            {
-                leftJoyValue = (verticalLeftEyeOverallInput - JoySorrowBorder) * 100.0f / (100.0f - JoySorrowBorder);
-
-                left_a = -100.0f / ((JoySorrowBorder - 100.0f) * (JoySorrowBorder - 100.0f));
-            }
-
-            // y = a(x - JoySorrowBorder)^2 + c
-            leftSorrowValue = left_a * (verticalLeftEyeOverallInput - JoySorrowBorder) * (verticalLeftEyeOverallInput - JoySorrowBorder) + 100.0f;
 
             #endregion
 
             #region Spread/Surprised
 
-            float eyeSize = (verticalLeftEyeValue + verticalRightEyeValue) * EyeSizeScale * 1000.0f;
-            float spreadValue;
-            float surprisedValue = 0.0f;
+            // As the name indicates,ÅgSpreadÅhwidens the upper part of the eye.
+            //ÅgSurprisedÅhalso widens the upper part of the eye, but is accompanied with a reduction of the iris area.
 
-            if (eyeSize > SpreadFinishBorder)
+            // Defines the size of the eyes.
+            // Multiplying by 50 is to make "eyeSize" roughly between 0 - 100 when SurprisedEyeSizeClampFactor == 1.0f
+            float eyeSize = Mathf.Max(_openedAmount[0] , _openedAmount[1]) * SurprisedEyeSizeClampFactor * 50.0f;
+
+            if (eyeSize > 100.0f /* Surprised enough */)
             {
-                spreadValue = 100.0f;
-                surprisedValue = SurprisedMaxValue;
+                _spreadValue = MeshInputMax;
+                _surprisedValue = ExpressionSurpriseMax;
             }
-            else if (eyeSize > 100.0f)
+            else if (eyeSize > 50.0f /* A little surprised */)
             {
-                float a = 100.0f / ((SpreadFinishBorder - 100.0f) * (SpreadFinishBorder - 100.0f));
-                spreadValue = a * (eyeSize - 100.0f) * (eyeSize - 100.0f);
-                surprisedValue = spreadValue * SurprisedMaxValue / 100.0f;
+                _spreadValue = Sigmoid(eyeSize, 50.0f, 100.0f, GradientOfSurpriseAmountSigmoid);
+                _surprisedValue = Math.Clamp(_spreadValue, MeshInputMin, ExpressionSurpriseMax);
             }
-            else
+            else /* Not surprised */
             {
-                spreadValue = Mathf.Min(rightJoyValue, leftJoyValue) * 0.4f; /* kawaii */
+                _spreadValue = MeshInputMin;
+                _surprisedValue = MeshInputMin;
             }
 
             #endregion
@@ -189,35 +207,40 @@ namespace Mediapipe.Allocator
             float eyebrowToEyeLengthAverage = (PlaneDistance(leftEyebrowVector) + PlaneDistance(rightEyebrowVector)) * 0.5f;
             float eyebrowToEyeLengthRatio = eyebrowToEyeLengthAverage / binocularDistance - AnglyEyebrowOffset;
 
-            float anglyValue = BindControlValue(-eyebrowToEyeLengthRatio, AnglyEyebrowScale * 3.0f /* Make the SurpriseEyebrowScale roughly 1.5 */);
+            _anglyValue = BindControlValue(-eyebrowToEyeLengthRatio, AnglyEyebrowScale * 3.0f /* Make the SurpriseEyebrowScale roughly 0 - 3 */);
 
             #endregion
 
             #region Others
 
-            if (KeepBothEyesSameMovement)
+            if(!AlwaysDisplayEyeHighlight && CanModifyEyeHighlight)
             {
-                rightJoyValue = Mathf.Min(rightJoyValue, leftJoyValue);
-                leftJoyValue = rightJoyValue;
-
-                verticalRightEyeValue = (verticalLeftEyeValue + verticalRightEyeValue) * 0.5f;
-                verticalLeftEyeValue = verticalRightEyeValue;
+                _skinnedMeshRenderer.SetBlendShapeWeight(24, Sigmoid(_closedAmount.Max()));
             }
 
-            float sorrowValue = Mathf.Max(rightSorrowValue, leftSorrowValue) - ClosedEyeOffset * 100.0f;
-            if (sorrowValue < 0.0f) sorrowValue = 0.0f;
-            else if (sorrowValue > 100.0f) sorrowValue = 100.0f;
+            if (KeepBothEyesSameMovement)
+            {
+                _joyValue[0] = _joyValue.Min();
+                _joyValue[1] = _joyValue[0];
+            }
 
             #endregion
 
             #region Adaptation
 
-            _skinnedMeshRenderer.SetBlendShapeWeight(12, anglyValue);
-            _skinnedMeshRenderer.SetBlendShapeWeight(18, rightJoyValue);
-            _skinnedMeshRenderer.SetBlendShapeWeight(19, leftJoyValue);
-            _skinnedMeshRenderer.SetBlendShapeWeight(20, sorrowValue);
-            _skinnedMeshRenderer.SetBlendShapeWeight(21, surprisedValue);
-            _skinnedMeshRenderer.SetBlendShapeWeight(22, spreadValue);
+            _skinnedMeshRenderer.SetBlendShapeWeight(12, _anglyValue);
+            _skinnedMeshRenderer.SetBlendShapeWeight(18, _joyValue[0]);
+            _skinnedMeshRenderer.SetBlendShapeWeight(19, _joyValue[1]);
+            _skinnedMeshRenderer.SetBlendShapeWeight(20, _sorrowValue.Max());
+            _skinnedMeshRenderer.SetBlendShapeWeight(21, _surprisedValue);
+            _skinnedMeshRenderer.SetBlendShapeWeight(22, _spreadValue);
+
+            _eyeControlValues[0] = _anglyValue;
+            _eyeControlValues[1] = _joyValue[0];
+            _eyeControlValues[2] = _joyValue[1];
+            _eyeControlValues[3] = _sorrowValue.Max();
+            _eyeControlValues[4] = _surprisedValue;
+            _eyeControlValues[5] = _spreadValue;
 
             #endregion
         }

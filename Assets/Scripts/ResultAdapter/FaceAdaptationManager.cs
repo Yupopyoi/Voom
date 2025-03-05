@@ -19,6 +19,9 @@ namespace Mediapipe.Allocator
         LandmarksPacket _eyePacket;
         EyeAdapter _eyeAdapter;
 
+        LandmarksPacket _eyebrowPacket;
+        EyebrowAdapter _eyebrowAdapter;
+
         protected override void Start()
         {
             base.Start();
@@ -32,6 +35,9 @@ namespace Mediapipe.Allocator
 
             _eyePacket = new(_landmarks, new int[16] { 473, 468, 386, 374, 159, 145, 263, 362, 132, 33, 475, 477, 470, 472, 334, 105 });
             _eyeAdapter = new(_faceObject, _eyePacket);
+
+            _eyebrowPacket = new(_landmarks, new int[0]);
+            _eyebrowAdapter = new(_faceObject, _eyebrowPacket, _eyeAdapter.GetEyeControlValues());
         }
 
         public override void ApplyMediapipeResult(FaceLandmarkerResult recognitionResult)
@@ -43,6 +49,7 @@ namespace Mediapipe.Allocator
 
             _mouthAdapter.ForwardApply();
             _eyeAdapter.ForwardApply();
+            _eyebrowAdapter.ForwardApply();
         }
     }
 
