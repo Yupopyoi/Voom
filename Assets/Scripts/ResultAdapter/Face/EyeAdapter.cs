@@ -26,6 +26,14 @@ namespace Mediapipe.Allocator
 
         public bool CanModifyEyeHighlight { get; set; } = true;
 
+        // True : It is easier to express feelings of surprise
+        // False : It is easier to express looking up
+        public bool CanChangeSizeIris { get; set; } = true;
+
+        // If the face is too far from the camera, eyes will move unnaturally.
+        // When the distance is less than this variable, do not move VRM Model's eyes.
+        public float RecognitionLowerLimitDistance { get; set; } = 1.0f;
+
         // The larger this number, the larger the program will recognize your eyes.
         // This variable is used to adjust for eye size, which varies by person.
         public float EyeSizeScale { get; set; } = 1.0f;
@@ -34,7 +42,7 @@ namespace Mediapipe.Allocator
         // When you want to be able to close eyes, this value should be greater than 1.
         // This makes VRM Model closer to actual human movement.
         // On the other hand, if you do not want to close eyes completely, this value should be less than 1.
-        public float EaseOfClosingEyes = 1.6f;
+        public float EaseOfClosingEyes = 1.2f;
 
         // The larger the number, the easier it is to express surprise.
         public float SurprisedEyeSizeClampFactor { get; set; } = 1.0f;
@@ -47,7 +55,12 @@ namespace Mediapipe.Allocator
         // Variables for the impression of half-open eyes.
         // around 0.0 : Cute impression
         // around 3.0 : Easy to make disgusted eyes, pity impression
-        public float AnglyEyebrowScale { get; set; } = 3.0f;
+        public float AnglyEyebrowScale { get; set; } = 1.0f;
+
+        public ReadOnlyCollection<float> GetEyeControlValues()
+        {
+            return Array.AsReadOnly(_eyeControlValues);
+        }
 
         #endregion
 
@@ -72,7 +85,7 @@ namespace Mediapipe.Allocator
             |   5   |   145    |   Left  eye (Lower central)   |            
             |  (6)  |   263    |     Right eye (Left  edge)    |
             |  (7)  |   362    |     Right eye (Right edge)    |
-            |  (8)  |   132    |     Left eye (Left  edge)     |
+            |  (8)  |   133    |     Left eye (Left  edge)     |
             |  (9)  |    33    |     Left eye (Right edge)     |
             |:-----:|:--------:|:-----------------------------:|
             |  10   |   475    |     Iris of Right eye UC      |
@@ -97,6 +110,9 @@ namespace Mediapipe.Allocator
 
          */
 
+        #region Private Member Variables
+
+        float _binocularDistance;
         readonly float[] _openedAmount = new float[2];
         readonly float[] _closedAmount = new float[2];
         readonly float[] _joyValue = new float[2];
@@ -106,10 +122,8 @@ namespace Mediapipe.Allocator
         float _anglyValue;
 
         readonly float[] _eyeControlValues = new float[6];
-        public ReadOnlyCollection<float> GetEyeControlValues()
-        {
-            return Array.AsReadOnly(_eyeControlValues);
-        }
+
+        #endregion
 
         public override void ForwardApply()
         {
@@ -118,11 +132,10 @@ namespace Mediapipe.Allocator
                 _skinnedMeshRenderer.SetBlendShapeWeight(24, 0.0f);
             }
 
-            Vector3 binocularVector = Landmark(0) - Landmark(1);
-            float binocularDistance = PlaneDistance(binocularVector);
+            _binocularDistance = PlaneDistance(Landmark(0) - Landmark(1));
 
             // If the face is too far from the camera, it will move unnaturally; in this case, do not move the eyes.
-            if (binocularDistance < 1.0f)
+            if (_binocularDistance < RecognitionLowerLimitDistance)
             {
                 _skinnedMeshRenderer.SetBlendShapeWeight(18, 0.0f);
                 _skinnedMeshRenderer.SetBlendShapeWeight(19, 0.0f);
@@ -131,9 +144,29 @@ namespace Mediapipe.Allocator
                 _skinnedMeshRenderer.SetBlendShapeWeight(22, 0.0f);
                 return;
             }
+            
+            ControlOpenClose();
 
-            #region Close / Open
+            ControlSpreadSurprised();
 
+            ControlAngly();
+
+            if(!AlwaysDisplayEyeHighlight && CanModifyEyeHighlight)
+            {
+                _skinnedMeshRenderer.SetBlendShapeWeight(24, Sigmoid(_closedAmount.Max()));
+            }
+
+            if (KeepBothEyesSameMovement)
+            {
+                _joyValue[0] = _joyValue.Min();
+                _joyValue[1] = _joyValue[0];
+            }
+
+            Adapt();
+        }
+
+        private void ControlOpenClose()
+        {
             float OpenedAmount(int eyeIndex)
             {
                 Vector3 VerticalEyeVector;
@@ -148,7 +181,7 @@ namespace Mediapipe.Allocator
 
                 float verticalEyeLength = PlaneDistance(VerticalEyeVector);
 
-                return verticalEyeLength / binocularDistance * EyeSizeScale * 20.0f;
+                return verticalEyeLength / _binocularDistance * EyeSizeScale * 20.0f;
             }
 
             for (int eyeIndex = 0; eyeIndex < 2; eyeIndex++) /* 0 : Right Eye, 1 : Left Eye */
@@ -157,10 +190,10 @@ namespace Mediapipe.Allocator
                 _closedAmount[eyeIndex] = BindControlValue(1.0f - _openedAmount[eyeIndex]);
 
                 // Joy
-                _joyValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex], BorderBetweenJoyAndSorrow, MeshInputMax, GradientOfOpenCloseAmountSigmoid) * EaseOfClosingEyes;
+                _joyValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex] * EaseOfClosingEyes, BorderBetweenJoyAndSorrow, MeshInputMax, GradientOfOpenCloseAmountSigmoid);
 
                 // Sorrow
-                if(_closedAmount[eyeIndex] < BorderBetweenJoyAndSorrow)
+                if (_closedAmount[eyeIndex] < BorderBetweenJoyAndSorrow)
                 {
                     _sorrowValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex], MeshInputMin, BorderBetweenJoyAndSorrow, GradientOfOpenCloseAmountSigmoid);
                 }
@@ -169,17 +202,16 @@ namespace Mediapipe.Allocator
                     _sorrowValue[eyeIndex] = MeshInputMax - Sigmoid(_closedAmount[eyeIndex], BorderBetweenJoyAndSorrow, MaxAmountOfEyeClosuresUsingSorrow, GradientOfOpenCloseAmountSigmoid);
                 }
             }
-
-            #endregion
-
-            #region Spread/Surprised
-
+        }
+    
+        private void ControlSpreadSurprised()
+        {
             // As the name indicates,gSpreadhwidens the upper part of the eye.
             //gSurprisedhalso widens the upper part of the eye, but is accompanied with a reduction of the iris area.
 
             // Defines the size of the eyes.
             // Multiplying by 50 is to make "eyeSize" roughly between 0 - 100 when SurprisedEyeSizeClampFactor == 1.0f
-            float eyeSize = Mathf.Max(_openedAmount[0] , _openedAmount[1]) * SurprisedEyeSizeClampFactor * 50.0f;
+            float eyeSize = Mathf.Max(_openedAmount[0], _openedAmount[1]) * SurprisedEyeSizeClampFactor * 50.0f;
 
             if (eyeSize > 100.0f /* Surprised enough */)
             {
@@ -197,37 +229,25 @@ namespace Mediapipe.Allocator
                 _surprisedValue = MeshInputMin;
             }
 
-            #endregion
-
-            #region Angly
-
+            if (!CanChangeSizeIris)
+            {
+                _surprisedValue = MeshInputMin;
+            }
+        }
+    
+        private void ControlAngly()
+        {
             Vector3 leftEyebrowVector = Landmark(0) - Landmark(14);
             Vector3 rightEyebrowVector = Landmark(1) - Landmark(15);
 
             float eyebrowToEyeLengthAverage = (PlaneDistance(leftEyebrowVector) + PlaneDistance(rightEyebrowVector)) * 0.5f;
-            float eyebrowToEyeLengthRatio = eyebrowToEyeLengthAverage / binocularDistance - AnglyEyebrowOffset;
+            float eyebrowToEyeLengthRatio = eyebrowToEyeLengthAverage / _binocularDistance - AnglyEyebrowOffset;
 
-            _anglyValue = BindControlValue(-eyebrowToEyeLengthRatio, AnglyEyebrowScale * 3.0f /* Make the SurpriseEyebrowScale roughly 0 - 3 */);
+            _anglyValue = BindControlValue(- eyebrowToEyeLengthRatio, AnglyEyebrowScale * 3.0f /* Make the SurpriseEyebrowScale roughly 0 - 3 */);
+        }
 
-            #endregion
-
-            #region Others
-
-            if(!AlwaysDisplayEyeHighlight && CanModifyEyeHighlight)
-            {
-                _skinnedMeshRenderer.SetBlendShapeWeight(24, Sigmoid(_closedAmount.Max()));
-            }
-
-            if (KeepBothEyesSameMovement)
-            {
-                _joyValue[0] = _joyValue.Min();
-                _joyValue[1] = _joyValue[0];
-            }
-
-            #endregion
-
-            #region Adaptation
-
+        private void Adapt()
+        {
             _skinnedMeshRenderer.SetBlendShapeWeight(12, _anglyValue);
             _skinnedMeshRenderer.SetBlendShapeWeight(18, _joyValue[0]);
             _skinnedMeshRenderer.SetBlendShapeWeight(19, _joyValue[1]);
@@ -241,8 +261,6 @@ namespace Mediapipe.Allocator
             _eyeControlValues[3] = _sorrowValue.Max();
             _eyeControlValues[4] = _surprisedValue;
             _eyeControlValues[5] = _spreadValue;
-
-            #endregion
         }
     }
 }// namespace Mediapipe.Allocator

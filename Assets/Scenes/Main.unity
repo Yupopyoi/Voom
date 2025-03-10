@@ -1570,6 +1570,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7140606858727328969, guid: 5e434c527b15b12438c517462b66b2a2, type: 3}
+      propertyPath: 'm_BlendShapeWeights.Array.data[5]'
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7140606858727328969, guid: 5e434c527b15b12438c517462b66b2a2, type: 3}
       propertyPath: 'm_BlendShapeWeights.Array.data[6]'
       value: 0
       objectReference: {fileID: 0}
@@ -1655,7 +1659,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7140606858727328969, guid: 5e434c527b15b12438c517462b66b2a2, type: 3}
       propertyPath: 'm_BlendShapeWeights.Array.data[29]'
-      value: 10
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7140606858727328969, guid: 5e434c527b15b12438c517462b66b2a2, type: 3}
       propertyPath: 'm_BlendShapeWeights.Array.data[31]'
