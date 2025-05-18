@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class MenuDisplayer : MonoBehaviour
@@ -101,13 +102,13 @@ public class MenuDisplayer : MonoBehaviour
             item.localPosition = (Vector3)startPos;
         }
 
-        for (int i = 0; i < _menuItems.Count; i++)
+        for (int i = _menuItems.Count - 1; i >= 0; i--)
         {
             RectTransform item = _menuItems[i];
-            item.gameObject.SetActive(true);
+            item.gameObject.SetActive(true);;
 
-            Vector2 startPos = _dragStartPos - new Vector2(0, _spacing * i);
-            Vector2 endPos = startPos - new Vector2(0, _spacing);
+            Vector2 endPos = _dragStartPos - new Vector2(0, _spacing * (_menuItems.Count - i));
+            Vector2 startPos = endPos + new Vector2(0, _spacing);
 
             yield return StartCoroutine(AnimateItemMove(item, startPos, endPos, _animationTime));
             yield return new WaitForSeconds(_delayBetweenItems);
