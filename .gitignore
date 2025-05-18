@@ -81,3 +81,8 @@ crashlytics-build.properties
 *.pyc
 /[Aa]ssets/TextMesh Pro/*
 /[Aa]ssets/PurchasedAssets/*
+
+# Temp
+Kavary/
+*.wav
+*.wav.meta
