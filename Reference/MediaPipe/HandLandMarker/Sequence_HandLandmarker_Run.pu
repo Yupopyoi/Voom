@@ -1,0 +1,110 @@
+@startuml Sequence_HandLandmarker_Run
+
+title Run() at HandLandmarkerRunner 
+
+HandLandmarkerRunner  -> HandLandmarkerRunner  : Start()
+HandLandmarkerRunner  -> HandLandmarkerRunner  : Play()
+HandLandmarkerRunner -> HandLandmarkerRunner : StartCoroutine(Run())
+
+HandLandmarkerRunner -> AssetLoader : PrepareAssetAsync()
+
+break
+
+HandLandmarkerRunner -> HandLandmarkDetectionConfig : GetHandLandmarkerOptions(OnHandLandmarkDetectionOutput)
+
+note right : Specify "OnHandLandmarkDetectionOutput()" as a callback function.
+
+HandLandmarkerRunner <-- HandLandmarkDetectionConfig : return new HandLandmarkerOptions
+
+break
+
+HandLandmarkerRunner -> HandLandmarker : CreateFromOptions(HandLandmarkerOptions)
+
+HandLandmarkerRunner <-- HandLandmarker : return new HandLandmarker
+
+break
+
+HandLandmarkerRunner <-- ImageSourceProvider : Get ImageSource via property
+
+break
+
+HandLandmarkerRunner -> screen : Initialize(imageSource)
+
+HandLandmarkerRunner -> HandLandmarkerRunner : SetupAnnotationController()
+
+loop while(true) 
+
+alt isPaused
+
+HandLandmarkerRunner -> HandLandmarkerRunner :  yield return new WaitWhile()
+
+end
+
+HandLandmarkerRunner -> textureFrame : TryGetTextureFrame()
+
+alt Could Get TextureFrame
+
+HandLandmarkerRunner <-- textureFrame : return TextureFrame
+
+else
+
+HandLandmarkerRunner -> HandLandmarkerRunner : yield return new WaitForEndOfFrame()
+
+break
+
+HandLandmarkerRunner -> HandLandmarkerRunner : Continue
+
+end
+
+end
+
+alt canUseGpuImage
+
+HandLandmarkerRunner -> HandLandmarkerRunner : yield return new WaitForEndOfFrame()
+
+HandLandmarkerRunner -> textureFrame : ReadTextureOnGPU()
+
+HandLandmarkerRunner -> textureFrame : BuildGpuImage()
+
+HandLandmarkerRunner <-- textureFrame : return Image
+
+else !canUseGpuImage
+
+HandLandmarkerRunner -> textureFrame : ReadTextureAsync()
+
+HandLandmarkerRunner -> textureFrame : BuildCpuImage()
+
+HandLandmarkerRunner <-- textureFrame : return Image
+
+end
+
+alt Live Stream
+
+HandLandmarkerRunner -> HandLandmarker : DetectAsync(Image)
+
+HandLandmarker -> HandLandmarker : new PacketMap()
+
+HandLandmarker -> HandLandmarker : SendLiveStreamData(PacketMap)
+
+HandLandmarker -> TaskRunner : Send(PacketMap)
+
+TaskRunner -> UnsafeNativeMethods : mp_tasks_core_TaskRunner_Send_Ppm()
+
+TaskRunner <-- UnsafeNativeMethods : Call Back
+
+HandLandmarker <- TaskRunner : OnHandLandmarkDetectionOutput()
+
+HandLandmarkerRunner <- HandLandmarker : _handLandmarkerResultAnnotationController.DrawLater(result);
+note right HandLandmarkerRunner
+    Drawing process is executed after this, but it is omitted here.
+end note
+
+else Other
+
+note right HandLandmarkerRunner : Description is omitted because this is not used.
+
+end
+
+end
+
+@enduml
