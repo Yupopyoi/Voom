@@ -9,6 +9,8 @@ public class MenuDisplayer : MonoBehaviour
     private bool _bothClickActive = false;
     private RectTransform _menuTransform;
 
+    private float _contractionRatio; // Reduction rate from 4K image quality
+
     private List<RectTransform> _menuItems = new List<RectTransform>();
 
     [Header("General")]
@@ -16,7 +18,7 @@ public class MenuDisplayer : MonoBehaviour
     [SerializeField, Range(1f, 1000f)] private float _dragJudgmentThreshold = 100f; // [pixels]
 
     [Header("Deployment")]
-    [SerializeField] float _verticalOffset = 150f;
+    [SerializeField] float _verticalOffset = 150f; // No Use now
     [SerializeField] float _spacing = 250f;
     [SerializeField] float _animationTime = 0.07f;
     [SerializeField] float _delayBetweenItems = 0.01f;
@@ -26,6 +28,8 @@ public class MenuDisplayer : MonoBehaviour
         _menuCanvas.gameObject.SetActive(false);
         _menuTransform = _menuCanvas.GetComponent<RectTransform>();
         _dragJudgmentThreshold = Mathf.Clamp(_dragJudgmentThreshold, 0.0f, UnityEngine.Screen.height * 0.5f);
+
+        _contractionRatio = UnityEngine.Screen.width / 3840.0f; /* 3840 = Horizontal pixels in 4K quality */
 
         // Find all CircleMenuItem
         foreach (Transform child in _menuCanvas.GetComponentsInChildren<Transform>(true))
@@ -107,8 +111,8 @@ public class MenuDisplayer : MonoBehaviour
             RectTransform item = _menuItems[i];
             item.gameObject.SetActive(true);;
 
-            Vector2 endPos = _dragStartPos - new Vector2(0, _spacing * (_menuItems.Count - i));
-            Vector2 startPos = endPos + new Vector2(0, _spacing);
+            Vector2 endPos = _dragStartPos - new Vector2(0.0f, _spacing * (_menuItems.Count - i) * _contractionRatio);
+            Vector2 startPos = endPos + new Vector2(0.0f, _spacing * _contractionRatio);
 
             yield return StartCoroutine(AnimateItemMove(item, startPos, endPos, _animationTime));
             yield return new WaitForSeconds(_delayBetweenItems);
