@@ -2825,7 +2825,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31ef1bab3987c9e44a9cc60a158fd8cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _renderTexture: {fileID: 8400000, guid: b927d828b765bf04f9e5e4ed1b353314, type: 2}
 --- !u!1 &1194527316
 GameObject:
   m_ObjectHideFlags: 0
