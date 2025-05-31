@@ -11,6 +11,10 @@ public class HoverHandler : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     private bool _isPointerOver = false;
     private bool _isPointerOverSubMenu = false;
 
+    private bool _preventAutoClose = false;
+
+    public bool PreventAutoClose { get { return _preventAutoClose; } set { _preventAutoClose = value; } }
+
     void Start()
     {
         if (_subMenuPanel != null) _subMenuPanel.SetActive(false);
@@ -26,13 +30,32 @@ public class HoverHandler : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     public void OnPointerExit(PointerEventData eventData)
     {
         _isPointerOver = false;
-        StartCoroutine(DelayedHide());
+
+        if (_preventAutoClose)
+        {
+            return;
+        }
+
+        StartCoroutine(DelayedHideWrapper());
+    }
+
+    private IEnumerator DelayedHideWrapper()
+    {
+        yield return null; // 1フレーム待つ
+        yield return StartCoroutine(DelayedHide());
     }
 
     private IEnumerator DelayedHide()
     {
-        yield return new WaitForSeconds(0.1f); // 少し待ってから状態確認
-        if (!_isPointerOver && !_isPointerOverSubMenu)
+        yield return new WaitForSeconds(0.1f);
+
+        // If it was closed on its own, this is where it ends.
+        if (_subMenuPanel != null && !_subMenuPanel.activeInHierarchy)
+        {
+            yield break;
+        }
+
+        if (!_isPointerOver && !_isPointerOverSubMenu && !_preventAutoClose)
         {
             _selectedImage.gameObject.SetActive(false);
             if (_subMenuPanel != null) _subMenuPanel.SetActive(false);
@@ -42,7 +65,7 @@ public class HoverHandler : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     public void SetSubMenuHover(bool hover)
     {
         _isPointerOverSubMenu = hover;
-        if (!hover && !_isPointerOver)
+        if (!hover && !_isPointerOver && !_preventAutoClose)
         {
             _selectedImage.gameObject.SetActive(false);
             if (_subMenuPanel != null) _subMenuPanel.SetActive(false);

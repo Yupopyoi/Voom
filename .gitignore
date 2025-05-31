@@ -74,6 +74,7 @@ crashlytics-build.properties
 
 # 3D Model
 /[Aa]ssets/VRMModel/*
+/[Aa]ssets/StreamingAssets/VRMModel/*
 *vrm
 
 # Others

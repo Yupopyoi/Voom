@@ -5,6 +5,9 @@
 // https://opensource.org/licenses/MIT.
 
 using Mediapipe.Tasks.Vision.PoseLandmarker;
+using System.Diagnostics;
+using UniGLTF;
+using UniVRM10;
 
 namespace Mediapipe.Allocator
 {
@@ -13,9 +16,14 @@ namespace Mediapipe.Allocator
         LandmarksPacket _chestPacket;
         ChestAdapter _chestAdapter;
 
-        protected override void Start()
+        bool _usePoseAdaptation = true;
+
+        protected override void OnEnable()
         {
-            base.Start();
+            base.OnEnable();
+
+            _vrmObject.GetComponent<Vrm10Instance>().enabled = false;
+            _vrmObject.GetComponent<RuntimeGltfInstance>().enabled = false;
 
             GenerateLandmarksList(33);
 
@@ -25,9 +33,16 @@ namespace Mediapipe.Allocator
 
         public override void ApplyMediapipeResult(PoseLandmarkerResult recognitionResult)
         {
+            if (!_usePoseAdaptation) return;
+
             for (int i = 0; i < _landmarks.Count; i++)
             {
                 _landmarks[i] = recognitionResult.poseLandmarks[0].landmarks[i];
+            }
+
+            if (_vrmObject == null)
+            {
+                return;
             }
 
             _chestAdapter.ForwardApply();

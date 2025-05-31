@@ -52,13 +52,13 @@ namespace Mediapipe.Allocator
         }
     }
 
-    public abstract class AdaptationManagerBase<T> : MonoBehaviour
+    public abstract class AdaptationManagerBase<T> : ScriptableObject
     {
         protected static GameObject _vrmObject;
 
         protected List<Tasks.Components.Containers.NormalizedLandmark> _landmarks;
 
-        protected virtual void Start()
+        protected virtual void OnEnable()
         {
             if(_vrmObject.IsUnityNull())
             {
@@ -68,7 +68,7 @@ namespace Mediapipe.Allocator
 
         private void FindVRM()
         {
-            Vrm10Instance vrmInstance = FindFirstObjectByType<Vrm10Instance>();
+            Vrm10Instance vrmInstance = MonoBehaviour.FindFirstObjectByType<Vrm10Instance>();
             if (vrmInstance != null)
             {
                 _vrmObject = vrmInstance.gameObject;
@@ -89,6 +89,9 @@ namespace Mediapipe.Allocator
         protected GameObject FindChildByName(string name)
         {
             List<GameObject> _allChildren = new();
+
+            if (_vrmObject == null) return new GameObject();
+
             GetAllChildren(_vrmObject.transform, _allChildren);
 
             return _allChildren.FirstOrDefault(obj => obj.name.Contains(name));

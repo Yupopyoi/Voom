@@ -29,6 +29,7 @@ public class MenuDisplayer : MonoBehaviour
         _menuTransform = _menuCanvas.GetComponent<RectTransform>();
         _dragJudgmentThreshold = Mathf.Clamp(_dragJudgmentThreshold, 0.0f, UnityEngine.Screen.height * 0.5f);
 
+        // To absorb differences in screen resolution
         _contractionRatio = UnityEngine.Screen.width / 3840.0f; /* 3840 = Horizontal pixels in 4K quality */
 
         // Find all CircleMenuItem
@@ -106,6 +107,9 @@ public class MenuDisplayer : MonoBehaviour
             item.localPosition = (Vector3)startPos;
         }
 
+        // The order of UI Items in the Inspector is the REVERSE of the display order.
+        // This is because Unity gives priority to objects that are positioned lower in the inspector.
+        // Here, the iterator is decremented, because the processing is executed in the order of display.
         for (int i = _menuItems.Count - 1; i >= 0; i--)
         {
             RectTransform item = _menuItems[i];

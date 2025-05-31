@@ -25,9 +25,9 @@ namespace Mediapipe.Allocator
         LandmarksPacket _eyeGazePacket;
         EyeGazeAdapter _eyeGazeAdapter;
 
-        protected override void Start()
+        protected override void OnEnable()
         {
-            base.Start();
+            base.OnEnable();
 
             GenerateLandmarksList(478);
 
@@ -51,6 +51,11 @@ namespace Mediapipe.Allocator
             for (int i = 0; i < _landmarks.Count; i++)
             {
                 _landmarks[i] = recognitionResult.faceLandmarks[0].landmarks[i];
+            }
+
+            if(_faceObject == null)
+            {
+                return;
             }
 
             _mouthAdapter.ForwardApply();
