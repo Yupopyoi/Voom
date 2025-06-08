@@ -19,6 +19,8 @@ namespace Mediapipe.Allocator
         Vector3 _rightEyePosition;
         Vector3 _leftEyePosition;
 
+        #region General Properties
+
         public bool CanDrawIrisMovement { get; set; } = true;
 
         public bool CanDrawIrisUpDownMovement { get; set; } = false;
@@ -42,6 +44,8 @@ namespace Mediapipe.Allocator
         public float SensitivityUpDownMovement { get; set; } = 1.0f;
 
         public float CenterOfUpDownMovement { get; set; } = 0.1f;
+
+        #endregion
 
         public EyeGazeAdapter(GameObject faceObject, LandmarksPacket landmarksPacket, GameObject rightIris, GameObject leftIris)
             : base(faceObject, landmarksPacket) 

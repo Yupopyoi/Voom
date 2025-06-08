@@ -25,6 +25,9 @@ namespace Mediapipe.Allocator
         LandmarksPacket _eyeGazePacket;
         EyeGazeAdapter _eyeGazeAdapter;
 
+        LandmarksPacket _catEarPacket;
+        CatEarAdapter _catEarAdapter;
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -44,6 +47,12 @@ namespace Mediapipe.Allocator
 
             _eyeGazePacket = new(_landmarks, new int[14] { 473, 468, 386, 374, 159, 145, 263, 362, 133, 33, 475, 477, 470, 472 });
             _eyeGazeAdapter = new(_faceObject, _eyeGazePacket, FindChildByName("R_FaceEye"), FindChildByName("L_FaceEye"));
+
+            _eyebrowPacket = new(_landmarks, new int[0]);
+            _eyebrowAdapter = new(_faceObject, _eyebrowPacket, _eyeAdapter.GetEyeControlValues());
+
+            _catEarPacket = new(_landmarks, new int[0]);
+            _catEarAdapter = new(FindChildByName("J_Opt_R_CatEar1_01"), FindChildByName("J_Opt_L_CatEar1_01"), _catEarPacket, _eyeAdapter.GetEyeControlValues());
         }
 
         public override void ApplyMediapipeResult(FaceLandmarkerResult recognitionResult)
@@ -62,6 +71,7 @@ namespace Mediapipe.Allocator
             _eyeAdapter.ForwardApply();
             _eyebrowAdapter.ForwardApply();
             _eyeGazeAdapter.ForwardApply();
+            _catEarAdapter.ForwardApply();
         }
     }
 

@@ -23,6 +23,8 @@ namespace Mediapipe.Allocator
             _faceObject = faceObject;
             _landmarksPacket = landmarksPacket;
 
+            if (IsEmptyGameObject(_faceObject)) return;
+
             _skinnedMeshRenderer = _faceObject.GetComponent<SkinnedMeshRenderer>();
         }
 
@@ -84,6 +86,18 @@ namespace Mediapipe.Allocator
         protected float Sigmoid(float x, float k = 0.1f) /* x = [ 0 , 100 ] */
         {
             return Sigmoid(x, 0.0f, 100.0f, k);
+        }
+
+        protected bool IsEmptyGameObject(GameObject obj)
+        {
+            if(obj == null) return true;
+
+            var components = obj.GetComponents<Component>();
+            if (components.Length > 1) return false;
+
+            if (obj.transform.childCount > 0) return false;
+
+            return true;
         }
 
         public abstract void ForwardApply();

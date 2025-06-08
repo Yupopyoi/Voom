@@ -431,7 +431,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f36505c0676a9f140a5087884981f801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  font: {fileID: 11400000, guid: e7a85628fb814684fadf49bf2ad2aca3, type: 2}
+  font: {fileID: 11400000, guid: dcfe4741b5f1fa548bed417ebc0f3bf4, type: 2}
 --- !u!114 &8752439911079400576
 MonoBehaviour:
   m_ObjectHideFlags: 0

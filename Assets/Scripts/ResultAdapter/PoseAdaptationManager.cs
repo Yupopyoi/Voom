@@ -22,8 +22,8 @@ namespace Mediapipe.Allocator
         {
             base.OnEnable();
 
-            _vrmObject.GetComponent<Vrm10Instance>().enabled = false;
-            _vrmObject.GetComponent<RuntimeGltfInstance>().enabled = false;
+            var vrmInstance = _vrmObject.GetComponent<Vrm10Instance>();
+            vrmInstance.UpdateType = Vrm10Instance.UpdateTypes.None;
 
             GenerateLandmarksList(33);
 
