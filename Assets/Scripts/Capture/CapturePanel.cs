@@ -15,11 +15,18 @@ namespace Capture
         private Image panelImage;
         private Vector2 lastMousePosition;
         private RectTransform targetRectTransform;
+        [SerializeField] protected bool isFixed = false;
 
         [SerializeField, Range(0.01f, 10.0f)] float initialSize = 5.0f;
 
         [Header("Sensitivity")]
         [SerializeField, Range(0.01f,20.0f)] float sizeChangeSensitivity = 5.0f;
+
+        public bool IsFixed
+        { 
+            get { return isFixed; }
+            set { isFixed = value; }
+        }
 
         protected virtual void Start()
         {
@@ -42,9 +49,6 @@ namespace Capture
             {
                 Destroy(gameObject);
             }
-
-            // Destroy panel if completely outside screen bounds
-            Vector3[] corners = new Vector3[4];
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -55,6 +59,8 @@ namespace Capture
 
         public void OnDrag(PointerEventData eventData)
         {
+            if (isFixed) return;
+
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 rectTransform, eventData.position, eventData.pressEventCamera, out Vector2 currentMousePosition))
             {
@@ -65,6 +71,8 @@ namespace Capture
 
         public void OnScroll(PointerEventData eventData)
         {
+            if (isFixed) return;
+
             float scaleFactor = 1 + eventData.scrollDelta.y * 0.001f * sizeChangeSensitivity;
             rectTransform.localScale *= scaleFactor;
         }
@@ -98,7 +106,12 @@ namespace Capture
             panelImage.raycastPadding = new Vector4(0.0f, diff * ratio, 0.0f, 0.0f);
         }
 
+        protected void FlipUpDown()
+        {
+            imageTarget.transform.localScale = new Vector3(1.0f, -1.0f, 1.0f);
+        }
+
         protected abstract void StartCapture();
-        protected abstract void Stop();
+        public abstract void Stop();
     }
 }// namespace Capture

@@ -2,25 +2,32 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class MonitorDropdownHandler : TMPDropdownHandlerBase
+public class VideoDropdownHandler : TMPDropdownHandlerBase
 {
     [SerializeField] private UnityEvent onChanged;
 
-    const int MAX_MONITOR_NUM = 3;
+    private WebCamDevice[] _videoDevices;
+
     int _monitorIndex = 1;
 
     protected override void Awake()
     {
         base.Awake();
-
+        
+        LoadDevices();
         var labels = new List<string>();
-        for(int monitorIndex = 1; monitorIndex <= MAX_MONITOR_NUM; monitorIndex++)
+        foreach (var device in _videoDevices)
         {
-            labels.Add(monitorIndex.ToString());
+            labels.Add(device.name);
         }
 
         SetOptions(labels);
         SetInitialIndex();
+    }
+
+    public void LoadDevices()
+    {
+        _videoDevices = WebCamTexture.devices;
     }
 
     protected override void OnChangedValue(int index)

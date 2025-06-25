@@ -3,7 +3,6 @@ using Capture;
 using System.Runtime.InteropServices;
 using System;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class ScreenCapturePanel : CapturePanel
 {
@@ -23,11 +22,16 @@ public class ScreenCapturePanel : CapturePanel
     private static extern int GetHeight();
 
     [DllImport("DDCapture.dll")]
-    private static extern float SetWide(float wide);
+    private static extern float SetWidthWide(float widthWide);
+
+    [DllImport("DDCapture.dll")]
+    private static extern float SetHeightWide(float heightWide);
 
     private Texture2D tex;
     private int width;
     private int height;
+    private float _widthWide = 1.0f;
+    private float _heightWide = 1.0f;
     private int monitorIndex = 0;
 
     private bool captureStarted = false;
@@ -41,9 +45,8 @@ public class ScreenCapturePanel : CapturePanel
 
     protected override void StartCapture()
     {
-        Stop();
-
-        SetWideRatio(1.5f);
+        SetWidthWide(_widthWide);
+        SetHeightWide(_heightWide);
 
         if (!StartCapture(monitorIndex))
         {
@@ -65,11 +68,12 @@ public class ScreenCapturePanel : CapturePanel
 
         _aspectRatio = CalculateAspectRatio(width, height);
         ResizeToFitRawImage();
+        FlipUpDown();
 
         captureStarted = true;
     }
 
-    protected override void Stop()
+    public override void Stop()
     {
         StopCapture();
         captureStarted = false;
@@ -91,6 +95,7 @@ public class ScreenCapturePanel : CapturePanel
     {
         StopCapture();
     }
+
     public void StartMonitorCapture()
     {
         StartCapture();
@@ -101,8 +106,9 @@ public class ScreenCapturePanel : CapturePanel
         monitorIndex = index;
     }
 
-    public void SetWideRatio(float wide)
+    public void SetWideRatio(float widthWide, float heightWide)
     {
-        SetWide(wide);
+        _widthWide = widthWide;
+        _heightWide = heightWide;
     }
 }

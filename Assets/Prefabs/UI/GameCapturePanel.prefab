@@ -82,10 +82,10 @@ GameObject:
   m_Component:
   - component: {fileID: 220156947552251829}
   - component: {fileID: 5841605227037936069}
+  - component: {fileID: 5378449603514024392}
   - component: {fileID: 714343479941734163}
-  - component: {fileID: 2536504138432684647}
   m_Layer: 5
-  m_Name: ScreenCapturePanel
+  m_Name: GameCapturePanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -119,6 +119,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7939372913125692587}
   m_CullTransparentMesh: 1
+--- !u!114 &5378449603514024392
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7939372913125692587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e79625f055d62144bb2275efa1fd7666, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  imageTarget: {fileID: 2642432806852780751}
+  initialSize: 2
+  sizeChangeSensitivity: 5
 --- !u!114 &714343479941734163
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149,18 +164,3 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &2536504138432684647
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7939372913125692587}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c2428fe93e0c614b8a34f6a4cd70f0a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  imageTarget: {fileID: 2642432806852780751}
-  initialSize: 2.5
-  sizeChangeSensitivity: 5

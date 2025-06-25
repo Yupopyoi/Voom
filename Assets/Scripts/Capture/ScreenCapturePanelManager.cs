@@ -1,50 +1,35 @@
-// CapturePanelManager.cs - Manages singleton instance of ScreenCapturePanel from UI
 using UnityEngine;
-using System.Collections;
 
-public class ScreenCapturePanelManager : MonoBehaviour
+public class ScreenCapturePanelManager : CapturePanelManagerBase
 {
-    [SerializeField] GameObject screenCapturePanelPrefab;
-    [SerializeField] Transform canvasTransform; // Set to your main Canvas transform in inspector
+    // In the inspector,these can be used to set the initial value of the "Wide",
+    // but it is not reflected in the initial value of the slider.
+    // "Wide" represent a multiplier for the size of the area to be captured.
+    // The screen size is automatically obtained in DDCapture.dll,
+    // but it may differ from the actual screen size. This can be corrected by these.
+    [SerializeField, Range(0.25f,2.5f)] private float _widthWide = 1.0f;
+    [SerializeField, Range(0.25f,2.5f)] private float _heightWide = 1.0f;
 
-    [SerializeField] MonitorDropdownHandler _monitorDropdownHandler;
+    protected override System.Type PanelType => typeof(ScreenCapturePanel);
 
-    private GameObject activePanel;
-
-    public void OnAddScreenCapture()
+    public void SetWidthWideRatio(float widthWide)
     {
-        if (activePanel != null) return;
-
-        activePanel = Instantiate(screenCapturePanelPrefab, canvasTransform);
-        StartCoroutine(StartPanelAfterInitialized(activePanel));
+        _widthWide = widthWide;
     }
 
-    public void OnDeleteScreenCapture()
+    public void SetHeightWideRatio(float heightWide)
     {
-        if (activePanel == null) return;
-        Destroy(activePanel);
+        _heightWide = heightWide;
     }
 
-    void Update()
+    protected override void AwakeCapture()
     {
-        if (activePanel == null) return;
+        MonitorDropdownHandler monitorDropdownHandler = dropdownHandler as MonitorDropdownHandler;
+        ScreenCapturePanel screenCapturePanel = capturePanel as ScreenCapturePanel;
 
-        if (Input.GetKeyDown(KeyCode.Delete))
-        {
-            Destroy(activePanel);
-            activePanel = null;
-        }
-    }
-
-    private IEnumerator StartPanelAfterInitialized(GameObject panel)
-    {
-        yield return null; // StartÇ™êÊÇ…åƒÇŒÇÍÇÈÇÊÇ§Ç…Ç∑ÇÈ
-
-        var script = panel.GetComponent<ScreenCapturePanel>();
-        if (script != null)
-        {
-            script.SetMonitorIndex(_monitorDropdownHandler.GetMonitorIndex());
-            script.StartMonitorCapture();
-        }
+        screenCapturePanel.Stop();
+        screenCapturePanel.SetMonitorIndex(monitorDropdownHandler.GetMonitorIndex());
+        screenCapturePanel.SetWideRatio(_widthWide, _heightWide);
+        screenCapturePanel.StartMonitorCapture();
     }
 }
