@@ -26,6 +26,8 @@ namespace Mediapipe.Unity
     [SerializeField] protected T annotation;
     protected bool isStale = false;
 
+    [SerializeField] protected bool _drawAnnotation = false;
+
     public bool isMirrored
     {
       get => annotation.isMirrored;

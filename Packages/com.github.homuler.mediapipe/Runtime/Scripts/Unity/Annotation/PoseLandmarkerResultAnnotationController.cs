@@ -55,7 +55,8 @@ namespace Mediapipe.Unity
       lock (_currentTargetLock)
       {
         isStale = false;
-        annotation.Draw(_currentTarget.poseLandmarks, _visualizeZ);
+        if(!_drawAnnotation)
+            annotation.Draw(_currentTarget.poseLandmarks, _visualizeZ);
       }
     }
   }

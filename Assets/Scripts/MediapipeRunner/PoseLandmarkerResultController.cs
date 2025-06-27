@@ -50,6 +50,11 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
             if (_currentTarget.poseLandmarks != null)
             {
                 onPoseTargetUpdated?.Invoke(_currentTarget);
+
+                if(_drawAnnotation)
+                {
+                    annotation.Draw(_currentTarget.poseLandmarks, false);
+                }
             }
         }
     }

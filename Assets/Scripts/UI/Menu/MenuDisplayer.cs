@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class MenuDisplayer : MonoBehaviour
@@ -20,7 +19,7 @@ public class MenuDisplayer : MonoBehaviour
     [Header("Deployment")]
     [SerializeField] float _verticalOffset = 150f; // No Use now
     [SerializeField] float _spacing = 250f;
-    [SerializeField] float _animationTime = 0.07f;
+    [SerializeField] float _animationTime = 0.05f;
     [SerializeField] float _delayBetweenItems = 0.01f;
 
     private void Start()

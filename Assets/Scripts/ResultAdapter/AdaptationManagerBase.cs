@@ -52,11 +52,25 @@ namespace Mediapipe.Allocator
         }
     }
 
+    public enum OperationDimension
+    {
+        TwoDimension,
+        ThreeDimension
+    }
+
     public abstract class AdaptationManagerBase<T> : ScriptableObject
     {
         protected static GameObject _vrmObject;
 
         protected List<Tasks.Components.Containers.NormalizedLandmark> _landmarks;
+
+        protected OperationDimension _operationDimension;
+
+        public OperationDimension Dimension 
+        {
+            get { return _operationDimension; } 
+            set { _operationDimension = value; }
+        }
 
         protected virtual void OnEnable()
         {

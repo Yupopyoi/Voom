@@ -13,7 +13,7 @@ This list holds the normalized xyz coordinates of hands landmarks.
 このリストは（複数の）人のランドマークのxyz座標を正規化した上で保持しています。  
 
 There are 33 hand landmarks, each as follows.  
-手のランドマークは 33 か所あり、それぞれ次の通りです。
+体のランドマークは 33 か所あり、それぞれ次の通りです。
 
 Google has published this information with images on [this page](https://chuoling.github.io/mediapipe/solutions/pose.html).  
 この情報については、Googleが [このページ](https://chuoling.github.io/mediapipe/solutions/pose.html) で画像付きで公開しています。
@@ -75,3 +75,18 @@ If each landmark is considered to be outside the screen, the value will be outsi
 
 The explanation is omitted because it is almost the same as for poseLandmarks.  
 poseLandmarksとほぼ同じであるため、解説は省略します。　　
+
+## public readonly struct NormalizedLandmark : IEquatable\<NormalizedLandmark>
+
+### public 変数
+
+public readonly float x;
+public readonly float y;
+public readonly float z;
+public readonly float? visibility;
+public readonly float? presence;
+public readonly string name;
+
+### public 関数
+
+public override string ToString()
