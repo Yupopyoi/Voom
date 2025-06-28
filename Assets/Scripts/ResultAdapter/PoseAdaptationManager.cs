@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-using UnityEngine;
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 using UniVRM10;
 

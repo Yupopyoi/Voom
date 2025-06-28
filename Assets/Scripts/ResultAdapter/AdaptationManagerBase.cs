@@ -104,7 +104,7 @@ namespace Mediapipe.Allocator
         {
             List<GameObject> _allChildren = new();
 
-            if (_vrmObject == null) return new GameObject();
+            if (_vrmObject == null) return null ;
 
             GetAllChildren(_vrmObject.transform, _allChildren);
 

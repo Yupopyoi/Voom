@@ -5,11 +5,16 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using Unity.VisualScripting;
+using System.ComponentModel.Design;
 
 public abstract class TMPDropdownHandlerBase : MonoBehaviour, IPointerClickHandler
 {
+    // This class is an abstract base class for extending and controlling TMP_Dropdown in Unity's TextMeshPro.
+    // This is designed to centralize design and functionality and allow only behavior to be defined in derived classes.
+     
     [SerializeField] protected TMP_Dropdown dropdown;
     [SerializeField] protected HoverHandler hoverHandler;
+
     private RectTransform dropdownRectTransform;
     private TextMeshProUGUI label;
 
@@ -74,7 +79,6 @@ public abstract class TMPDropdownHandlerBase : MonoBehaviour, IPointerClickHandl
         }
     }
 
-
     private void HandleValueChanged(int index)
     {
         OnChangedValue(index);
@@ -132,7 +136,9 @@ public abstract class TMPDropdownHandlerBase : MonoBehaviour, IPointerClickHandl
         {
             yield return null;
         }
-        yield return null; // 1ÉtÉåÅ[ÉÄóPó\
+
+        // Prevent bugs that cause the UI to close by itself by allowing one frame grace.
+        yield return null;
 
         if (hoverHandler != null)
         {
