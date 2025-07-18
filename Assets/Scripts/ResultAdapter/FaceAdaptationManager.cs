@@ -9,7 +9,7 @@ using Mediapipe.Tasks.Vision.FaceLandmarker;
 
 namespace Mediapipe.Allocator
 {
-    public class FaceAdaptationManager : AdaptationManagerBase<FaceLandmarkerResult>
+    public class FaceAdaptationManager : AdaptationManagerBase<FaceLandmarkerResult>, IAdaptationManager<FaceLandmarkerResult>
     {
         GameObject _faceObject; 
 

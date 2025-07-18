@@ -23,8 +23,6 @@ namespace Mediapipe.UnityRunner.FaceLandmarkDetection
 
         protected FaceLandmarkerResult _currentTarget;
 
-        private readonly object _currentTargetLock = new object();
-
         public void DrawNow(FaceLandmarkerResult target)
         {
             target.CloneTo(ref _currentTarget);

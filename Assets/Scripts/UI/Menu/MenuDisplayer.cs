@@ -6,26 +6,25 @@ public class MenuDisplayer : MonoBehaviour
 {
     private Vector2 _dragStartPos;
     private bool _bothClickActive = false;
-    private RectTransform _menuTransform;
 
     private float _contractionRatio; // Reduction rate from 4K image quality
 
-    private List<RectTransform> _menuItems = new List<RectTransform>();
+    private List<RectTransform> _menuItems = new();
 
     [Header("General")]
     [SerializeField] private Canvas _menuCanvas;
     [SerializeField, Range(1f, 1000f)] private float _dragJudgmentThreshold = 100f; // [pixels]
 
     [Header("Deployment")]
-    [SerializeField] float _verticalOffset = 150f; // No Use now
-    [SerializeField] float _spacing = 250f;
-    [SerializeField] float _animationTime = 0.05f;
-    [SerializeField] float _delayBetweenItems = 0.01f;
+    [SerializeField] private float _verticalOffset = 150f; // No Use now
+    [SerializeField] private float _spacing = 250f;
+    [SerializeField] private float _animationTime = 0.05f;
+    [SerializeField] private float _delayBetweenItems = 0.01f;
 
     private void Start()
     {
         _menuCanvas.gameObject.SetActive(false);
-        _menuTransform = _menuCanvas.GetComponent<RectTransform>();
+
         _dragJudgmentThreshold = Mathf.Clamp(_dragJudgmentThreshold, 0.0f, UnityEngine.Screen.height * 0.5f);
 
         // To absorb differences in screen resolution
@@ -49,7 +48,7 @@ public class MenuDisplayer : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         // Pressing both mouse buttons is the trigger to open the menu.
         // It is a conditional judgment that if either button is pressed while the other button is pressed.
@@ -82,14 +81,14 @@ public class MenuDisplayer : MonoBehaviour
         }
     }
 
-    void ShowMainMenu()
+    private void ShowMainMenu()
     {
         _menuCanvas.gameObject.SetActive(true);
 
         StartCoroutine(AnimateMenuItems());
     }
 
-    void HideMainMenu()
+    private void HideMainMenu()
     {
         _menuCanvas.gameObject.SetActive(false);
     }

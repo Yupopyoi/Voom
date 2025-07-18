@@ -11,6 +11,8 @@ namespace Mediapipe.Allocator
 {
     public class PoseAdaptationManager : AdaptationManagerBase<PoseLandmarkerResult>
     {
+        LandmarksPacket _hipPacket;
+        HipAdapter _hipAdapter;
         LandmarksPacket _chestPacket;
         ChestAdapter _chestAdapter;
 
@@ -25,8 +27,12 @@ namespace Mediapipe.Allocator
 
             GenerateLandmarksList(33);
 
-            _chestPacket = new(_landmarks, new int[2] { 11, 12 });
-            _chestAdapter = new(FindChildByName("Chest"), _chestPacket);
+            // Definition of "Adapters" that apply the result of MediaPipe to each part
+            // and "Packets" that convey information to Adapter.
+            _hipPacket = new(_landmarks, new int[2] { 23, 24 });
+            _hipAdapter = new(FindChildByName("Hip"), _hipPacket, false, true, true);
+            _chestPacket = new(_landmarks, new int[4] { 11, 12, 23, 24 });
+            _chestAdapter = new(FindChildByName("Chest"), _chestPacket, true, true, true);
         }
 
         public override void ApplyMediapipeResult(PoseLandmarkerResult recognitionResult)
@@ -43,7 +49,8 @@ namespace Mediapipe.Allocator
                 return;
             }
 
-            _chestAdapter.ForwardApply();
+            _hipAdapter.ForwardApply();
+            _chestAdapter.ForwardApply(_hipAdapter.LatestRotation);
         }
     }
 

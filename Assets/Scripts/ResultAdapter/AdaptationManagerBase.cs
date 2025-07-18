@@ -25,18 +25,31 @@ namespace Mediapipe.Allocator
             this.z = z;
         }
 
+        public Rotation(Vector3 rot)
+        {
+            this.x = rot.x;
+            this.y = rot.y;
+            this.z = rot.z;
+        }
+
         public readonly Vector3 ToVector3 => new(x, y, z);
 
         public override readonly string ToString()
         {
             return $"Rotation (x: {x}, y: {y}, z: {z})";
         }
+
+        public readonly Quaternion ToQuaternion => Quaternion.Euler(x, y, z);
     }
 
     public struct LandmarksPacket
     {
         public List<Tasks.Components.Containers.NormalizedLandmark> Landmarks { get; private set; }
         public int Capacity { get; private set; }
+
+        // This array contains the index of the landmark to be used at each part.
+        // This allows us to force the use of only the necessary landmarks within the "Adapter".
+        // See https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker for the corresponding indexes and landmarks
         private readonly int[] Indexes;
 
         public LandmarksPacket(List<Tasks.Components.Containers.NormalizedLandmark> landmarks, int[] indexes)
@@ -58,7 +71,12 @@ namespace Mediapipe.Allocator
         ThreeDimension
     }
 
-    public abstract class AdaptationManagerBase<T> : ScriptableObject
+    interface IAdaptationManager<T>
+    {
+        void ApplyMediapipeResult(T recognitionResult);
+    }
+
+    public abstract class AdaptationManagerBase<T> : ScriptableObject, IAdaptationManager<T>
     {
         protected static GameObject _vrmObject;
 

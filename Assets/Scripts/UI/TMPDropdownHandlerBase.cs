@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using Unity.VisualScripting;
-using System.ComponentModel.Design;
 
 public abstract class TMPDropdownHandlerBase : MonoBehaviour, IPointerClickHandler
 {

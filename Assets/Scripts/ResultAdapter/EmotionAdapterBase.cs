@@ -8,7 +8,12 @@ using UnityEngine;
 
 namespace Mediapipe.Allocator
 {
-    public abstract class EmotionAdapterBase
+    interface IEmotionAdapter
+    {
+        void ForwardApply();
+    }
+
+    public abstract class EmotionAdapterBase : IEmotionAdapter
     {
         protected GameObject _faceObject;
         protected SkinnedMeshRenderer _skinnedMeshRenderer;

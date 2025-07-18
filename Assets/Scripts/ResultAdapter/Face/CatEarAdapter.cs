@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 
 namespace Mediapipe.Allocator
 {
-    public class CatEarAdapter : EmotionAdapterBase
+    public class CatEarAdapter : EmotionAdapterBase, IEmotionAdapter
     {
         private readonly ReadOnlyCollection<float> _eyeControlValues;
 
