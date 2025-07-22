@@ -35,9 +35,18 @@ public static class GameLogger
         RefreshTargets();
     }
 
+    public static void Log(float value, string prefixMessage = "Float")
+    {
+        logQueue.Enqueue(prefixMessage + $" : {value:F2}");
+        if (logQueue.Count > maxLines)
+            logQueue.Dequeue();
+
+        RefreshTargets();
+    }
+
     public static void Vector3Log(Vector3 logv)
     {
-        string message = $"x : {logv.x:F1}, y : {logv.y:F1}, z : {logv.z:F1}";
+        string message = $"x : {logv.x:F2}, y : {logv.y:F2}, z : {logv.z:F2}";
         logQueue.Enqueue(message);
         if (logQueue.Count > maxLines)
             logQueue.Dequeue();

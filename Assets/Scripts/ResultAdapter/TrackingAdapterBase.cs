@@ -19,9 +19,11 @@ namespace Mediapipe.Allocator
 
     // This class provides the functions and declarations necessary for the operation of the various parts of the body.
     // ForwardApply is an abstract method and MUST be implemented in all subclasses.
+    // For more details, see https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
     public abstract class TrackingAdapterBase : IPoseAdapter
     {
         protected GameObject _partObject;
+        private Transform _partTransform; 
 
         protected Vector3 _initTransform;
         protected LandmarksPacket _landmarksPacket;
@@ -31,6 +33,7 @@ namespace Mediapipe.Allocator
         private readonly Queue<Vector3> _rotationCache;
 
         public Rotation LatestRotation => new(AverageRotation());
+        public Rotation WorldRotation => new(_partTransform.rotation.eulerAngles);
 
         #region Logger (For Debug)
 
@@ -68,6 +71,8 @@ namespace Mediapipe.Allocator
             _unfixAxis[2] = unfixZ;
 
             _rotationCache = new(capacity: CacheSize);
+
+            _partTransform = _partObject.transform;
         }
 
         /// <summary>

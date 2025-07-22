@@ -1552,6 +1552,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MediapipeRunners
       objectReference: {fileID: 0}
+    - target: {fileID: 3245773516361761059, guid: 9d4dc8c10b908cc4cb97aec495090304, type: 3}
+      propertyPath: isPaused
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4158745827190667810, guid: 9d4dc8c10b908cc4cb97aec495090304, type: 3}
       propertyPath: m_Enabled
       value: 0

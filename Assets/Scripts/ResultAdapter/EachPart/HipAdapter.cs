@@ -23,11 +23,11 @@ namespace Mediapipe.Allocator
 
             Vector3 calculatedEulerAngles = CalculateSignedEulerAngles(hipVec);
 
-            Vector3 chestRotationValue = new(calculatedEulerAngles.x /* No effect now, we have to add landmarks of hips! */,
+            Vector3 hipRotationValue = new(calculatedEulerAngles.x /* No effect now, we have to add landmarks of hips! */,
                                              Mathf.Clamp(calculatedEulerAngles.y, -100f, 100f),
                                              calculatedEulerAngles.z);
 
-            ApplyRotation(chestRotationValue);
+            ApplyRotation(hipRotationValue);
         }
     }
 }// namespace Mediapipe.Allocator

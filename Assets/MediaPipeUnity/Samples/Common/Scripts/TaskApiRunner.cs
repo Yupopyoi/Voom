@@ -24,7 +24,7 @@ namespace Mediapipe.Unity.Sample
 #pragma warning restore IDE1006
 
     protected Bootstrap bootstrap;
-    protected bool isPaused;
+    [SerializeField] protected bool isPaused;
 
     private readonly Stopwatch _stopwatch = new();
 
