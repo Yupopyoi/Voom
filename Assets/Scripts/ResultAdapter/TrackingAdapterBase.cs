@@ -159,6 +159,47 @@ namespace Mediapipe.Allocator
             );
         }
 
+        #region Utils
+
+        /// <summary>
+        /// Hyperbolic tangent
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns>tanh(x)</returns>
+        protected float Tanh(float x)
+        {
+            float ep = Mathf.Exp(x);
+            float em = Mathf.Exp(-x);
+            return (ep - em) / (ep + em);
+        }
+
+        /// <summary>
+        /// This function returns a smooth staircase function around zero.
+        /// It looks like two sigmoid functions connected together.
+        /// This makes the model more stable and enables smooth movement.
+        /// If you want to check the shape of the graph, try entering this equation into GeoGebra.
+        /// f(x)=(a/2)*(tanh(k(x+(a/2)))+tanh(k(x-(a/2))))
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="range">The value at which input and output are equal.(convergence value)</param>
+        /// <param name="k"></param>
+        /// <param name="wide">Change the value at which the rate of change is greatest.</param>
+        /// <returns></returns>
+        protected float ToSmoothStair(float value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
+        {
+            float mid = range * 0.5f;
+            return mid * (Tanh(k * (value + mid * wide)) + Tanh(k * (value - mid * wide)));
+        }
+
+        protected Vector3 ToSmoothStair(Vector3 value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
+        {
+            return new Vector3(ToSmoothStair(value.x, range, k, wide),
+                               ToSmoothStair(value.y, range, k, wide),
+                               ToSmoothStair(value.z, range, k, wide));
+        }
+
+        #endregion
+
         /// <summary>
         /// This function applies the calculated rotation values (x,y,z) to the model.
         /// This sets the initial value if an invalid value is specified

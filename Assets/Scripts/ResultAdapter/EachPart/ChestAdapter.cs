@@ -28,8 +28,8 @@ namespace Mediapipe.Allocator
         public override void ForwardApply(Rotation? parentRotation = null)
         {
             Vector3 chestRawRotation = CalculateRawRotation(parentRotation);
-
-            ApplyRotation(chestRawRotation);
+            
+            ApplyRotation(ToSmoothStair(chestRawRotation));
         }
 
         private Vector3 CalculateRawRotation(Rotation? parentRotation)
@@ -40,9 +40,9 @@ namespace Mediapipe.Allocator
             Vector3 calculatedEulerAngles = CalculateSignedEulerAngles(shoulderVec);
 
             Vector3 chestRotationRawValue = new(CalculateRotationX() + _hunchbackCorrection,
-                                                Mathf.Clamp(-calculatedEulerAngles.y, -90f, 90f),
+                                                Mathf.Clamp(-calculatedEulerAngles.y, -90f, 90f) + NegateArmEffect() * _armMovementCorrection * 0.1f,
                                                 calculatedEulerAngles.z + NegateArmEffect() * _armMovementCorrection);
-
+            
             Vector3 propagatedRotation /* From parents ( = Hips) */ = parentRotation.GetValueOrDefault().ToVector3;
             
             return propagatedRotation - chestRotationRawValue;

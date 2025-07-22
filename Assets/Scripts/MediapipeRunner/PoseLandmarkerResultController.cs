@@ -15,6 +15,8 @@ using UnityEngine.Events;
 
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 using Mediapipe.Unity;
+using TMPro;
+using System.Diagnostics;
 
 namespace Mediapipe.UnityRunner.PoseLandmarkDetection
 {
@@ -23,6 +25,13 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
         public UnityEvent<PoseLandmarkerResult> onPoseTargetUpdated;
 
         protected PoseLandmarkerResult _currentTarget;
+
+        [SerializeField] private bool _canDisplayFPS = false;
+        [SerializeField] private TextMeshProUGUI _fpsText;
+
+        private readonly TimeIntervalTracker _tracker = new();
+        private double _elapsedSum = 0.0;
+        private const double UPDATE_INTERVAL = 500.0;
 
         public void InitScreen(int maskWidth, int maskHeight) => annotation.InitMask(maskWidth, maskHeight);
 
@@ -55,7 +64,42 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
                 {
                     annotation.Draw(_currentTarget.poseLandmarks, false);
                 }
+
+                if(_canDisplayFPS)
+                {
+                    double elapsed = _tracker.ElapsedSinceLastCall();
+                    _elapsedSum += elapsed;
+
+                    if(_elapsedSum > UPDATE_INTERVAL)
+                    {
+                        _elapsedSum = 0.0;
+                        double fps = 1000.0 / elapsed;
+                        _fpsText.text = $"FPS : {fps:F1}";
+                    }
+                }
+                else
+                {
+                    _fpsText.text = $"";
+                }
             }
+        }
+    }
+
+    public class TimeIntervalTracker
+    {
+        private Stopwatch stopwatch;
+
+        public TimeIntervalTracker()
+        {
+            stopwatch = new Stopwatch();
+            stopwatch.Start();
+        }
+
+        public double ElapsedSinceLastCall()
+        {
+            double elapsed = stopwatch.Elapsed.TotalMilliseconds;
+            stopwatch.Restart();
+            return elapsed;
         }
     }
 }

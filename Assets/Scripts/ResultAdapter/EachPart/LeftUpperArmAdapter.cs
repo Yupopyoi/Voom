@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Mediapipe.Allocator
@@ -33,7 +32,7 @@ namespace Mediapipe.Allocator
 
             Vector3 armRotation = armRotationRawValue - propagatedRotation;
 
-            ApplyRotation(armRotationRawValue);
+            ApplyRotation(ToSmoothStair(armRotation));
         }
     }
 }// namespace Mediapipe.Allocator
