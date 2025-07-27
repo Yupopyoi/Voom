@@ -6,6 +6,7 @@
 
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 using UniVRM10;
+using VRMController;
 
 namespace Mediapipe.Allocator
 {
@@ -24,6 +25,11 @@ namespace Mediapipe.Allocator
         LeftLowerArmAdapter _leftLowerArmAdapter;
 
         bool _usePoseAdaptation = true;
+        Sleeve sleeve;
+
+        public PalmVectors PalmVectors{ private get; set; }
+
+        public Sleeve Sleeve{ private get; set; }
 
         protected override void OnEnable()
         {
@@ -37,16 +43,16 @@ namespace Mediapipe.Allocator
             // Definition of "Adapters" that apply the result of MediaPipe to each part
             // and "Packets" that convey information to Adapter.
             _hipPacket = new(_landmarks, new int[2] { 23, 24 });
-            _hipAdapter = new(FindChildByName("Hip"), _hipPacket, false, false, true);
+            _hipAdapter = new(FindChildByName("Hip"), _hipPacket, Sleeve, false, false, true);
 
             _chestPacket = new(_landmarks, new int[6] { 11, 12, 23, 24, 13, 14 });
-            _chestAdapter = new(FindChildByName("Chest"), _chestPacket, true, true, true);
+            _chestAdapter = new(FindChildByName("Chest"), _chestPacket, Sleeve , true, true, true);
 
-            _leftUpperArmPacket = new(_landmarks, new int[3] { 11, 13, 12 });
-            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftUpperArmPacket, false, true, true);
+            _leftUpperArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });
+            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftUpperArmPacket, Sleeve, false, true, true);
 
             _leftLowerArmPacket = new(_landmarks, new int[3] { 11, 13, 15 });
-            _leftLowerArmAdapter = new(FindChildByName("L_LowerArm"), _leftUpperArmPacket, false, true, true);
+            _leftLowerArmAdapter = new(FindChildByName("L_LowerArm"), _leftUpperArmPacket, Sleeve, false, false, true);
         }
 
         public override void ApplyMediapipeResult(PoseLandmarkerResult recognitionResult)
@@ -64,9 +70,12 @@ namespace Mediapipe.Allocator
             }
 
             _hipAdapter.ForwardApply();
+            return;
             _chestAdapter.ForwardApply(_hipAdapter.LatestRotation);
             _leftUpperArmAdapter.ForwardApply(_chestAdapter.LatestRotation);
             _leftLowerArmAdapter.ForwardApply(_leftUpperArmAdapter.LatestRotation);
+
+            _leftUpperArmAdapter.ReverseApply(PalmVectors);
         }
     }
 

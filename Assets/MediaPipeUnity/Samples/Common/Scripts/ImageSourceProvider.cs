@@ -10,10 +10,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-using System.Collections;
-using System.Diagnostics;
-using UnityEngine.UIElements;
-
 namespace Mediapipe.Unity.Sample
 {
   public static class ImageSourceProvider

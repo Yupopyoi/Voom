@@ -11,24 +11,23 @@
 // https://opensource.org/licenses/MIT.
 
 using System.Collections;
-
 using UnityEngine;
 using UnityEngine.Rendering;
 
-using Mediapipe.Tasks.Vision.FaceLandmarker;
+using Mediapipe.Tasks.Vision.HandLandmarker;
 using Mediapipe.Unity;
 using Mediapipe.Unity.Sample;
-using Mediapipe.Unity.Sample.FaceLandmarkDetection;
+using Mediapipe.Unity.Sample.HandLandmarkDetection;
 
-namespace Mediapipe.UnityRunner.FaceLandmarkDetection
+namespace Mediapipe.UnityRunner.HandLandmarkDetection
 {
-    public class FaceLandmarkerRunner : VisionTaskApiRunner<FaceLandmarker>
+    public class HandLandmarkerRunner : VisionTaskApiRunner<HandLandmarker>
     {
-        [SerializeField] private FaceLandmarkerResultController _faceLandmarkerResultController;
+        [SerializeField] private HandLandmarkerResultController _handLandmarkerResultController;
 
         private Unity.Experimental.TextureFramePool _textureFramePool;
 
-        public readonly FaceLandmarkDetectionConfig config = new();
+        public readonly HandLandmarkDetectionConfig config = new();
 
         public override void Stop()
         {
@@ -39,27 +38,26 @@ namespace Mediapipe.UnityRunner.FaceLandmarkDetection
 
         protected override IEnumerator Run()
         {
+            config.NumHands = 2;
+
             Debug.Log($"Delegate = {config.Delegate}");
-            Debug.Log($"Image Read Mode = {config.ImageReadMode}");
             Debug.Log($"Running Mode = {config.RunningMode}");
-            Debug.Log($"NumFaces = {config.NumFaces}");
-            Debug.Log($"MinFaceDetectionConfidence = {config.MinFaceDetectionConfidence}");
-            Debug.Log($"MinFacePresenceConfidence = {config.MinFacePresenceConfidence}");
+            Debug.Log($"NumHands = {config.NumHands}");
+            Debug.Log($"MinHandDetectionConfidence = {config.MinHandDetectionConfidence}");
+            Debug.Log($"MinHandPresenceConfidence = {config.MinHandPresenceConfidence}");
             Debug.Log($"MinTrackingConfidence = {config.MinTrackingConfidence}");
-            Debug.Log($"OutputFaceBlendshapes = {config.OutputFaceBlendshapes}");
-            Debug.Log($"OutputFacialTransformationMatrixes = {config.OutputFacialTransformationMatrixes}");
 
             yield return AssetLoader.PrepareAssetAsync(config.ModelPath);
 
-            var options = config.GetFaceLandmarkerOptions(config.RunningMode == Tasks.Vision.Core.RunningMode.LIVE_STREAM ? OnFaceLandmarkDetectionOutput : null);
-            taskApi = FaceLandmarker.CreateFromOptions(options, GpuManager.GpuResources);
+            var options = config.GetHandLandmarkerOptions(config.RunningMode == Tasks.Vision.Core.RunningMode.LIVE_STREAM ? OnHandLandmarkDetectionOutput : null);
+            taskApi = HandLandmarker.CreateFromOptions(options, GpuManager.GpuResources);
             var imageSource = ImageSourceProvider.ImageSource;
 
             yield return imageSource.Play();
 
             if (!imageSource.isPrepared)
             {
-                Debug.LogError("Failed to start ImageSource, exiting...");
+                Logger.LogError(TAG, "Failed to start ImageSource, exiting...");
                 yield break;
             }
 
@@ -70,17 +68,20 @@ namespace Mediapipe.UnityRunner.FaceLandmarkDetection
             // NOTE: The screen will be resized later, keeping the aspect ratio.
             screen.Initialize(imageSource);
 
-            SetupAnnotationController(_faceLandmarkerResultController, imageSource);
+            SetupAnnotationController(_handLandmarkerResultController, imageSource);
 
             var transformationOptions = imageSource.GetTransformationOptions();
             var flipHorizontally = transformationOptions.flipHorizontally;
             var flipVertically = transformationOptions.flipVertically;
-            var imageProcessingOptions = new Tasks.Vision.Core.ImageProcessingOptions(rotationDegrees: (int)transformationOptions.rotationAngle);
+
+            // Always setting rotationDegrees to 0 to avoid the issue that the detection becomes unstable when the input image is rotated.
+            // https://github.com/homuler/MediaPipeUnityPlugin/issues/1196
+            var imageProcessingOptions = new Tasks.Vision.Core.ImageProcessingOptions(rotationDegrees: 0);
 
             AsyncGPUReadbackRequest req = default;
             var waitUntilReqDone = new WaitUntil(() => req.done);
             var waitForEndOfFrame = new WaitForEndOfFrame();
-            var result = FaceLandmarkerResult.Alloc(options.numFaces);
+            var result = HandLandmarkerResult.Alloc(options.numHands);
 
             // NOTE: we can share the GL context of the render thread with MediaPipe (for now, only on Android)
             var canUseGpuImage = SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3 && GpuManager.GpuResources != null;
@@ -122,8 +123,10 @@ namespace Mediapipe.UnityRunner.FaceLandmarkDetection
                         break;
                     case ImageReadMode.CPUAsync:
                     default:
-                        if(imageSource.GetCurrentTexture() == null)
+                        if (imageSource.GetCurrentTexture() == null)
                         {
+                            textureFrame.Release();
+                            yield return new WaitForEndOfFrame();
                             continue;
                         }
                         req = textureFrame.ReadTextureAsync(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
@@ -134,7 +137,6 @@ namespace Mediapipe.UnityRunner.FaceLandmarkDetection
                             Debug.LogWarning($"Failed to read texture from the image source");
                             continue;
                         }
-
                         image = textureFrame.BuildCPUImage();
                         textureFrame.Release();
                         break;
@@ -145,23 +147,21 @@ namespace Mediapipe.UnityRunner.FaceLandmarkDetection
                     case Tasks.Vision.Core.RunningMode.IMAGE:
                         if (taskApi.TryDetect(image, imageProcessingOptions, ref result))
                         {
-                            _faceLandmarkerResultController.DrawNow(result);
+                            _handLandmarkerResultController.DrawNow(result);
                         }
                         else
                         {
-                            // clear the annotation
-                            _faceLandmarkerResultController.DrawNow(default);
+                            _handLandmarkerResultController.DrawNow(default);
                         }
                         break;
                     case Tasks.Vision.Core.RunningMode.VIDEO:
                         if (taskApi.TryDetectForVideo(image, GetCurrentTimestampMillisec(), imageProcessingOptions, ref result))
                         {
-                            _faceLandmarkerResultController.DrawNow(result);
+                            _handLandmarkerResultController.DrawNow(result);
                         }
                         else
                         {
-                            // clear the annotation
-                            _faceLandmarkerResultController.DrawNow(default);
+                            _handLandmarkerResultController.DrawNow(default);
                         }
                         break;
                     case Tasks.Vision.Core.RunningMode.LIVE_STREAM:
@@ -171,9 +171,9 @@ namespace Mediapipe.UnityRunner.FaceLandmarkDetection
             }
         }
 
-        private void OnFaceLandmarkDetectionOutput(FaceLandmarkerResult result, Image image, long timestamp)
+        private void OnHandLandmarkDetectionOutput(HandLandmarkerResult result, Image image, long timestamp)
         {
-            _faceLandmarkerResultController.DrawLater(result);
+            _handLandmarkerResultController.DrawLater(result);
         }
     }
 }

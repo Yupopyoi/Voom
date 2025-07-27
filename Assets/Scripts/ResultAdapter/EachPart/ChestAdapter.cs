@@ -1,11 +1,12 @@
 using UnityEngine;
+using VRMController;
 
 namespace Mediapipe.Allocator
 {
     public class ChestAdapter : TrackingAdapterBase
     {
-        public ChestAdapter(GameObject partObject, LandmarksPacket landmarksPacket, bool unfixX = false, bool unfixY = false, bool unfixZ = true)
-            : base(partObject, landmarksPacket, unfixX, unfixY, unfixZ) { }
+        public ChestAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool unfixX = false, bool unfixY = false, bool unfixZ = true)
+            : base(partObject, landmarksPacket, sleeve, unfixX, unfixY, unfixZ) { }
 
         /*  [Landmark Index]
          * 

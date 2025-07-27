@@ -6,13 +6,14 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using VRMController;
 
 namespace Mediapipe.Allocator
 {
     interface IPoseAdapter
     {
         void ForwardApply(Rotation? parentRotation = null);
-        void ReverseApply(Rotation childRotation);
+        void ReverseApply(INamedVector childMessage);
         Rotation LatestRotation { get; }
         void ChangeCacheSize(int size);
     }
@@ -23,7 +24,8 @@ namespace Mediapipe.Allocator
     public abstract class TrackingAdapterBase : IPoseAdapter
     {
         protected GameObject _partObject;
-        private Transform _partTransform; 
+        private Transform _partTransform;
+        protected Sleeve _sleeve;
 
         protected Vector3 _initTransform;
         protected LandmarksPacket _landmarksPacket;
@@ -55,7 +57,7 @@ namespace Mediapipe.Allocator
 
         #endregion
 
-        protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket, 
+        protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve,
                                       bool unfixX = true, bool unfixY = true, bool unfixZ = false)
         {
             _partObject = partObject;
@@ -73,6 +75,7 @@ namespace Mediapipe.Allocator
             _rotationCache = new(capacity: CacheSize);
 
             _partTransform = _partObject.transform;
+            _sleeve = sleeve;
         }
 
         /// <summary>
@@ -123,7 +126,7 @@ namespace Mediapipe.Allocator
         /// In short, after adapting changes from the center of the body toward the tip,
         /// we now also apply changes from the tip toward the center.
         /// </summary>
-        public virtual void ReverseApply(Rotation childRotation) { }
+        public virtual void ReverseApply(INamedVector childMessage) { }
 
         #region Functions for calculating the amount of rotation
 
@@ -166,7 +169,7 @@ namespace Mediapipe.Allocator
         /// </summary>
         /// <param name="x"></param>
         /// <returns>tanh(x)</returns>
-        protected float Tanh(float x)
+        protected static float Tanh(float x)
         {
             float ep = Mathf.Exp(x);
             float em = Mathf.Exp(-x);
@@ -185,17 +188,29 @@ namespace Mediapipe.Allocator
         /// <param name="k"></param>
         /// <param name="wide">Change the value at which the rate of change is greatest.</param>
         /// <returns></returns>
-        protected float ToSmoothStair(float value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
+        protected static float ToSmoothStair(float value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
         {
             float mid = range * 0.5f;
             return mid * (Tanh(k * (value + mid * wide)) + Tanh(k * (value - mid * wide)));
         }
 
-        protected Vector3 ToSmoothStair(Vector3 value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
+        protected static Vector3 ToSmoothStair(Vector3 value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
         {
             return new Vector3(ToSmoothStair(value.x, range, k, wide),
                                ToSmoothStair(value.y, range, k, wide),
                                ToSmoothStair(value.z, range, k, wide));
+        }
+
+        public static float ThresholdLerp(float x, float a, float max = 1.0f)
+        {
+            if (x < a) return 0.0f;
+            return (x - a) / (max - a);
+        }
+
+        public static float ThresholdQuadratic(float x, float a, float max = 1.0f)
+        {
+            float t = ThresholdLerp(x, a, max);
+            return t * t;
         }
 
         #endregion

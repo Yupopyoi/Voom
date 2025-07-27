@@ -12,7 +12,13 @@ using UniVRM10;
 
 namespace Mediapipe.Allocator
 {
-    public struct Rotation
+    public interface INamedVector
+    {
+        string ToString(); // override
+        Dictionary<string, Vector3> GetNamedVectors();
+    }
+
+    public struct Rotation : INamedVector
     {
         public float x;
         public float y;
@@ -37,6 +43,14 @@ namespace Mediapipe.Allocator
         public override readonly string ToString()
         {
             return $"Rotation (x: {x}, y: {y}, z: {z})";
+        }
+
+        public readonly Dictionary<string, Vector3> GetNamedVectors()
+        {
+            return new()
+            {
+                { "Rotation", ToVector3 }
+            };
         }
 
         public readonly Quaternion ToQuaternion => Quaternion.Euler(x, y, z);

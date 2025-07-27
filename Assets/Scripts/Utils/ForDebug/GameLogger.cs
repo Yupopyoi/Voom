@@ -53,9 +53,29 @@ public static class GameLogger
         RefreshTargets();
     }
 
+    public static void Log(float value1, float value2, float value3, string prefixMessage = "Float")
+    {
+        logQueue.Enqueue(prefixMessage + $" : {value1:F2} , {value2:F2} , {value3:F2}");
+        if (logQueue.Count > maxLines)
+            logQueue.Dequeue();
+
+        RefreshTargets();
+    }
+
     public static void Log(Vector3 logv, int digits = 2)
     {
         Vector3Log(logv, digits);
+    }
+
+    public static void Log(Vector3 logv1, Vector3 logv2)
+    {
+        TwoPointsLog(logv1, logv2);
+    }
+
+
+    public static void Log(Quaternion logq, int digits = 2)
+    {
+        Vector3Log(logq.eulerAngles, digits);
     }
 
     public static void Vector3Log(Vector3 logv, int digits = 2)

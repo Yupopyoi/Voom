@@ -9,17 +9,26 @@ using UnityEngine;
 using Mediapipe.Allocator;
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 using Mediapipe.Tasks.Vision.FaceLandmarker;
+using Mediapipe.Tasks.Vision.HandLandmarker;
 
 namespace VRMController
 {
+    public enum Sleeve
+    {
+        Long,
+        Short,
+    }
+
     // This class generates and manages the "AdaptationManager" and relays the delivery of MediaPipe results.
 
     public class VRMAllocator : MonoBehaviour
     {
         PoseAdaptationManager _poseAdaptationManager;
         FaceAdaptationManager _faceAdaptationManager;
+        HandAdaptationManager _handAdaptationManager;
 
         [SerializeField] OperationDimension _operationDimension;
+        [SerializeField] Sleeve _sleeve;
 
         public OperationDimension OperationDimension => _operationDimension;
 
@@ -35,11 +44,20 @@ namespace VRMController
                 _faceAdaptationManager = null;
             }
 
+            if (_handAdaptationManager != null)
+            {
+                _handAdaptationManager = null;
+            }
+
             _poseAdaptationManager = ScriptableObject.CreateInstance<PoseAdaptationManager>();
             _faceAdaptationManager = ScriptableObject.CreateInstance<FaceAdaptationManager>();
+            _handAdaptationManager = ScriptableObject.CreateInstance<HandAdaptationManager>();
 
             _poseAdaptationManager.Dimension = _operationDimension;
             _faceAdaptationManager.Dimension = _operationDimension;
+            _handAdaptationManager.Dimension = _operationDimension;
+
+            _poseAdaptationManager.Sleeve = _sleeve;
         }
 
         public void EntryPoseAdaptation(PoseLandmarkerResult recognitionResult)
@@ -47,6 +65,7 @@ namespace VRMController
             if (_poseAdaptationManager != null)
             {
                 _poseAdaptationManager.ApplyMediapipeResult(recognitionResult);
+                _poseAdaptationManager.PalmVectors = _handAdaptationManager.CalculatePalmVectors();
             }
         }
 
@@ -57,5 +76,23 @@ namespace VRMController
                 _faceAdaptationManager.ApplyMediapipeResult(recognitionResult);
             }
         }
+
+        public void EntryHandAdaptation(HandLandmarkerResult recognitionResult)
+        {
+            if (_handAdaptationManager != null)
+            {
+                _handAdaptationManager.ApplyMediapipeResult(recognitionResult);
+            }
+        }
+
+        public void OnSleeveChanged(Sleeve sleeve)
+        {
+            _sleeve = sleeve;
+            if (_poseAdaptationManager != null)
+            {
+                _poseAdaptationManager.Sleeve = _sleeve;
+            }
+        }
+
     }
 }// namespace VRMController
