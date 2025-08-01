@@ -1,4 +1,5 @@
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.UIElements.Experimental;
 using VRMController;
 
 namespace Mediapipe.Allocator
@@ -15,68 +16,44 @@ namespace Mediapipe.Allocator
          *        1               12           right shoulder
          *        2               23             left  hip
          *        3               24             right hip
-         *        4               13            left  elbow
-         *        5               14            right elbow
          */
 
-        // Prevents the model from bending forward (hunchback).
-        // The larger the value, the more straight (or in some cases, warped) the model will be.
-        // This number may eventually change to property.
-        private float _hunchbackCorrection = 30.0f;
+        // Points
+        private Vector3 _leftShoulder;
+        private Vector3 _rightShoulder;
+        private Vector3 _leftHip;
+        private Vector3 _rightHip;
 
-        private float _armMovementCorrection = 30.0f;
-
-        public override void ForwardApply(Rotation? parentRotation = null)
+        public override void ForwardApply(PoseMatrix? parentMatrix = null)
         {
-            Vector3 chestRawRotation = CalculateRawRotation(parentRotation);
-            
-            ApplyRotation(ToSmoothStair(chestRawRotation));
-        }
+            _leftShoulder = Landmark(0);
+            _rightShoulder = Landmark(1);
+            _leftHip = Landmark(2);
+            _rightHip = Landmark(3);
 
-        private Vector3 CalculateRawRotation(Rotation? parentRotation)
-        {
+            // Center of torso
+            Vector3 chestCenterPoint = (_leftShoulder + _rightShoulder) * 0.5f;
+            Vector3 hipCenterPoint = (_leftHip + _rightHip) * 0.5f;
 
-            Vector3 shoulderVec = Landmark(0) - Landmark(1);
+            Vector3 up = (hipCenterPoint - chestCenterPoint).normalized;
+            Vector3 right = (_rightShoulder - _leftShoulder).normalized;
+            Vector3 forward = Vector3.Cross(up, right).normalized;
+            right = Vector3.Cross(forward, up).normalized;
 
-            Vector3 calculatedEulerAngles = CalculateSignedEulerAngles(shoulderVec);
+            _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, chestCenterPoint);
 
-            Vector3 chestRotationRawValue = new(CalculateRotationX() + _hunchbackCorrection,
-                                                Mathf.Clamp(-calculatedEulerAngles.y, -90f, 90f) + NegateArmEffect() * _armMovementCorrection * 0.1f,
-                                                calculatedEulerAngles.z + NegateArmEffect() * _armMovementCorrection);
-            
-            Vector3 propagatedRotation /* From parents ( = Hips) */ = parentRotation.GetValueOrDefault().ToVector3;
-            
-            return propagatedRotation - chestRotationRawValue;
-        }
+            // Extracting relative rotation from the hip
+            if (parentMatrix.HasValue)
+            {
+                // Hip^-1 * Chest = Local Rotation
+                PoseMatrix localMatrix = parentMatrix.Value.Inverse *_poseMatrix;
 
-        private float CalculateRotationX()
-        {
-            Vector3 spineVec = (Landmark(2) + Landmark(3)) * 0.5f - (Landmark(0) + Landmark(1)) * 0.5f;
+                // Make it less sensitive to small movements.
+                // This prevents meaningless vibrations from occurring in the model when you are stationary.
+                Quaternion stableRotationLHS = ToSmoothStair(localMatrix.RotationLHS);
 
-            if (spineVec == Vector3.zero)
-                return 0f;
-
-            spineVec.Normalize();
-
-            float pitchRad = Mathf.Atan2(spineVec.z, spineVec.y);
-            return -Mathf.Rad2Deg * pitchRad;
-        }
-
-        /// <summary>
-        /// Compensates for torso tilt caused by arm elevation.
-        /// When the arm is raised (e.g., lifting the left hand), 
-        /// the shoulder may also rise and rotate, unintentionally tilting the upper body. 
-        /// This function cancels that effect to maintain a stable torso orientation.
-        /// </summary>
-        private float NegateArmEffect()
-        {
-            Vector3 leftArmVec = (Landmark(0) - Landmark(4)).normalized;
-            Vector3 rightArmVec = (Landmark(1) - Landmark(5)).normalized;
-
-            float leftArmLift = leftArmVec.y > 0 ? leftArmVec.y : 0.0f;
-            float rightArmLift = rightArmVec.y > 0 ? rightArmVec.y : 0.0f;
-
-            return leftArmLift - rightArmLift;
+                ApplyRotation(stableRotationLHS);
+            }
         }
     }
 }// namespace Mediapipe.Allocator

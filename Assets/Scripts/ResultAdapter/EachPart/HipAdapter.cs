@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using VRMController;
 
@@ -6,62 +7,54 @@ namespace Mediapipe.Allocator
     public class HipAdapter : TrackingAdapterBase
     {
         public HipAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool unfixX = false, bool unfixY = false, bool unfixZ = true)
-            : base(partObject, landmarksPacket, sleeve, unfixX, unfixY, unfixZ) { }
+            : base(partObject, landmarksPacket, sleeve, unfixX, unfixY, unfixZ) {
+        }
 
         /*  [Landmark Index]
          * 
          *    Call Index    Mediapipe Index         Part
          *        0               23             left  hip
          *        1               24             right hip
+　　　　 *        2               11           left  shoulder
+         *        3               12           right shoulder
          */
 
-        public override void ForwardApply(Rotation? parentRotation = null)
+        public override void ForwardApply(PoseMatrix? parentMatrix = null)
         {
-            /*
             Vector3 leftHip = Landmark(0);
             Vector3 rightHip = Landmark(1);
-
-            Vector3 hipVec = leftHip - rightHip;
-
-            Vector3 calculatedEulerAngles = CalculateSignedEulerAngles(hipVec);
-
-            Vector3 hipRotationValue = new(calculatedEulerAngles.x,
-                                             Mathf.Clamp(calculatedEulerAngles.y, -100f, 100f),
-                                             calculatedEulerAngles.z);
-
-
-            ApplyRotation(hipRotationValue);
-            */
-
-            Vector3 leftHip = Landmark(0);
-            Vector3 rightHip = Landmark(1);
-
-            // 1. ヒップの中心位置
             Vector3 hipCenter = (leftHip + rightHip) * 0.5f;
 
-            // 2. ローカル座標系の定義
+            if(!LandmarkVisibility(0) && !LandmarkVisibility(1))
+            {
+                _poseMatrix = NeutralHipMatrix();
+
+                ApplyRotation(_poseMatrix.RotationLHS);
+                return;
+            }
+
             Vector3 right = (rightHip - leftHip).normalized;
+            Vector3 neck = (Landmark(2) + Landmark(3)) * 0.5f;
+            Vector3 upHint = (hipCenter - neck).normalized;
 
-            // 仮のup方向（頭部方向に近い方向を定義）
-            Vector3 neck = Landmark(2);  // 例: SpineやNeckなど
-            Vector3 up = (hipCenter - neck).normalized;
+            Vector3 forward = Vector3.Cross(right, upHint).normalized;
+            Vector3 up = Vector3.Cross(forward, right).normalized;
 
-            // orthonormal basis
-            Vector3 forward = Vector3.Cross(right, up).normalized;
-            up = Vector3.Cross(forward, right).normalized;
+            _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, hipCenter);
 
-            // 3. 同次変換行列を作る（回転成分のみ使用）
-            Matrix4x4 T = Matrix4x4.identity;
-            T.SetColumn(0, new Vector4(right.x, right.y, right.z, 0));
-            T.SetColumn(1, new Vector4(up.x, up.y, up.z, 0));
-            T.SetColumn(2, new Vector4(forward.x, forward.y, forward.z, 0));
-            T.SetColumn(3, new Vector4(hipCenter.x, hipCenter.y, hipCenter.z, 1));
+            // Make it less sensitive to small movements.
+            // This prevents meaningless vibrations from occurring in the model when you are stationary.
+            Quaternion stableRotationLHS = ToSmoothStair(_poseMatrix.RotationLHS);
 
-            // 4. 回転部分を取り出して適用
-            Quaternion rotation = T.rotation;
-            Vector3 euler = rotation.eulerAngles;
+            ApplyRotation(stableRotationLHS);
+        }
 
-            ApplyRotation(euler);
+        private static PoseMatrix NeutralHipMatrix()
+        {
+            return PoseMatrix.SetBasisAndPosition(new Vector3(-1.0f,  0.0f,  0.0f),
+                                                  new Vector3( 0.0f, +1.0f,  0.0f),
+                                                  new Vector3( 0.0f,  0.0f, -1.0f),
+                                                  new Vector3( 0.5f,  0.5f,  0.0f));
         }
     }
 }// namespace Mediapipe.Allocator

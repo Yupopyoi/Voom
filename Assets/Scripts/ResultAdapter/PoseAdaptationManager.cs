@@ -42,16 +42,16 @@ namespace Mediapipe.Allocator
 
             // Definition of "Adapters" that apply the result of MediaPipe to each part
             // and "Packets" that convey information to Adapter.
-            _hipPacket = new(_landmarks, new int[2] { 23, 24 });
+            _hipPacket = new(_landmarks, new int[4] { 23, 24, 11, 12 });
             _hipAdapter = new(FindChildByName("Hip"), _hipPacket, Sleeve, false, false, true);
 
-            _chestPacket = new(_landmarks, new int[6] { 11, 12, 23, 24, 13, 14 });
+            _chestPacket = new(_landmarks, new int[4] { 11, 12, 23, 24});
             _chestAdapter = new(FindChildByName("Chest"), _chestPacket, Sleeve , true, true, true);
 
             _leftUpperArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });
-            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftUpperArmPacket, Sleeve, false, true, true);
+            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftUpperArmPacket, Sleeve, true, true, true);
 
-            _leftLowerArmPacket = new(_landmarks, new int[3] { 11, 13, 15 });
+            _leftLowerArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });
             _leftLowerArmAdapter = new(FindChildByName("L_LowerArm"), _leftUpperArmPacket, Sleeve, false, false, true);
         }
 
@@ -70,12 +70,11 @@ namespace Mediapipe.Allocator
             }
 
             _hipAdapter.ForwardApply();
-            return;
-            _chestAdapter.ForwardApply(_hipAdapter.LatestRotation);
-            _leftUpperArmAdapter.ForwardApply(_chestAdapter.LatestRotation);
-            _leftLowerArmAdapter.ForwardApply(_leftUpperArmAdapter.LatestRotation);
+            _chestAdapter.ForwardApply(_hipAdapter.PoseMatrix);
+            _leftUpperArmAdapter.ForwardApply(_chestAdapter.PoseMatrix);
+            _leftLowerArmAdapter.ForwardApply(_leftUpperArmAdapter.PoseMatrix);
 
-            _leftUpperArmAdapter.ReverseApply(PalmVectors);
+           // _leftUpperArmAdapter.ReverseApply(PalmVectors);
         }
     }
 

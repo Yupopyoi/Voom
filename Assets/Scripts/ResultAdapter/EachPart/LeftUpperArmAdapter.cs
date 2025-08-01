@@ -14,13 +14,6 @@ namespace Mediapipe.Allocator
         public LeftUpperArmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool unfixX = false, bool unfixY = false, bool unfixZ = true)
             : base(partObject, landmarksPacket, sleeve, unfixX, unfixY, unfixZ) { }
 
-        Vector3 armRotation;
-
-        readonly float _notRotationThreshold = 0.8f; // Range : 1.0 <=> _verticalThreshold
-        readonly float _verticalThreshold = 0.4f;    // Range : _notRotationThreshold <=> 0.0f
-
-        readonly float _correctionCoefficientForForwardRotation = 60.0f;
-
         /*  [Landmark Index]
          *        
          *   | Call Index |  Mediapipe Index  |      Part      |
@@ -33,149 +26,64 @@ namespace Mediapipe.Allocator
          *   |     5      |         24        |   right hip    |
          */
 
-        public override void ForwardApply(Rotation? parentRotation = null)
+        public override void ForwardApply(PoseMatrix? parentMatrix = null)
         {
-            Vector3 leftShoulder = Landmark(0);
-            Vector3 leftElbow = Landmark(1);
+            Vector3 shoulder = Landmark(0); // Point: left shoulder
+            Vector3 elbow = Landmark(1);    // Point: left elbow
+            Vector3 hip = Landmark(4);      // Point: left hip
 
-            Vector3 leftArmVec = leftElbow - leftShoulder;
+            // Vector (X Axis) : Elbow -> Shoulder
+            Vector3 right = (shoulder - elbow).normalized;
 
-            Vector3 calculatedEulerAngles = CalculateSignedEulerAngles(leftArmVec);
+            // Although normalization is lost,
+            // multiplying y by 1.2 makes the hand rise steadily to the top.
+            right.y *= 1.2f;
 
-            Vector3 armRotationRawValue = new(0.0f, /* Implement in ReverseApply() */
-                                              Mathf.Clamp(calculatedEulerAngles.y, -100f, 100f),
-                                              Mathf.Clamp(calculatedEulerAngles.z, -100f, 100f));
+            // Vector (Z Axis) : Defined using upHint
+            Vector3 upHint = (hip - shoulder).normalized;
+            Vector3 forward = Vector3.Cross(right, upHint).normalized;
 
-            Vector3 propagatedRotation /* From parents ( = Chest ) */ = parentRotation.GetValueOrDefault().ToVector3;
+            // Vector (Y Axis)
+            Vector3 up = Vector3.Cross(forward, right).normalized;
 
-            armRotation = armRotationRawValue - propagatedRotation;
+            _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, shoulder);
+
+            // Make it less sensitive to small movements.
+            // This prevents meaningless vibrations from occurring in the model when you are stationary.
+            Quaternion stableRotationLHS = ToSmoothStair(_poseMatrix.RotationLHS);
+
+            ApplyRotation(PreventUnwantedRotation(stableRotationLHS));
         }
 
-        float _prevTwistAngle = 0f;
-        public override void ReverseApply(INamedVector palmVectors)
+        protected override Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS)
         {
-            Vector3 upperArm = (Landmark(1) - Landmark(0)).normalized;
-            Vector3 lowerArm = (Landmark(1) - Landmark(3)).normalized;
-            lowerArm.z = ThresholdQuadratic(lowerArm.z, 0.5f);
+            var stableEulerAngles = smoothedRotationLHS.eulerAngles;
 
-            ((PalmVectors)palmVectors).ConvertToVerticalPalmVector(lowerArm, true);
-
-            // Correction of forward rotation by LowerArm
-            float lowerRawArmY = Vector3.Dot(lowerArm, Vector3.up); // [-1.0, 1.0]
-
-            float lowerArmY = lowerRawArmY > 0.0f ? lowerRawArmY : 0.0f;
-            armRotation.y -= _correctionCoefficientForForwardRotation * lowerArmY;
-
-            #region Legacy
-
-            /*
-            // Dot product of upper arm and lower arm.
-            // The larger this value, the more the arm is bent.
-            // The maximum value of the dot product is 1,
-            // because the vectors representing the upper arm and lower arm are normalized.
-            float armDot = Vector3.Dot(lowerArm, upperArm);
-            armDot = armDot > 0.0f ? armDot : 0.0f;
-
-            // |      armDot     | armRotation.z [deg] | applicationRatio |
-            // |                 |     (Lower Arm)     |                  |
-            // |:---------------:|:-------------------:|:----------------:|
-            // |       1.0       |          0          |         0        |
-            // |        :        |          :          |         :        |
-            // |    nThreshold   |          0          |         0        |
-            // |        :        |          :          |         :        |
-            // |        :        |        Lerp         |       Lerp       |
-            // |        :        |          :          |         :        |
-            // |    vThreshold   |         90          |         1        |
-            // |        :        |          :          |         :        |
-            // |        :        |        Lerp         |         :        |
-            // |        :        |          :          |         :        |
-            // |       0.0       | maxRotation ( > 90) |         1        |
-
-
-            float spineLowerArmDot = Vector3.Dot(SpineVector(), lowerArm);
-            float twistAngle = spineLowerArmDot * 90.0f;
-            
-            void ApplyTwist(float currentTwistAngle)
+            if (stableEulerAngles.x > 270)
             {
-                float deltaTwist = currentTwistAngle - _prevTwistAngle;
-                //GameLogger.Log(currentTwistAngle, _prevTwistAngle,deltaTwist);
-                _partObject.transform.Rotate(
-                    _partObject.transform.right, // Ôü
-                    deltaTwist,
-                    Space.World
-                );
-
-                _prevTwistAngle = currentTwistAngle;
+                stableEulerAngles.x = 0.0f;
+            }
+            if (stableEulerAngles.y > 180)
+            {
+                stableEulerAngles.y = 0.0f;
+            }
+            if (stableEulerAngles.z > 180)
+            {
+                stableEulerAngles.z -= 360.0f;
             }
 
-            GameLogger.Log(spineLowerArmDot * 45);
-            ApplyTwist(spineLowerArmDot * 45);
-            //Vector3 upperArmVec = (elbowWorld - shoulderWorld).normalized;
-            
-            float armDot = Vector3.Dot(upperArm, lowerArm);
+            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -90.0f, 90.0f);
 
-            // abs(armDot) > 0.5 : Ignore the palm vector
-            //                     In this case, the X rotation of the upper arm depends on
-            //                     the forward and backward rotation of the lower arm.
-            // abs(armDot) < 0.2 : Ignore the dot product (LowerArm) 
-            //                     In this case, the X rotation of the upper arm depends on
-            //                     the palm vector.
-            // otherwise : Blending two elements
-
-            if (Mathf.Abs(armDot) < 0.2) // In other words, in your arms are bent.
-            {
-                // lowerArm.z represents the magnitude of the front-back rotation of the lower arm (normalized).
-
-                // |    lowerArm.z    | armRotation.x [deg] |
-                // |:----------------:|:-------------------:|
-                // |        1.0       |           0         |
-                // |         :        |          :          | (y = -45x + 45)
-                // |        0.0       |          45         |
-                // |         :        |          :          | (y = -90x + 45)
-                // |       -1.0       |         135         |
-
-                if(lowerArm.z > 0.0f)
-                {
-                    armRotation.x = - 45.0f * lowerArm.z + 45.0f;
-                }
-                else // lowerArm.z <= 0.0f
-                {
-                    armRotation.x = -90.0f * lowerArm.z + 45.0f;
-                }
-
-                GameLogger.Log(armRotation.x);
-            }
-            else if(Mathf.Abs(armDot) > 0.1)
-            {
-                // | leftPalmVector.y | armRotation.x [deg] |
-                // |:----------------:|:-------------------:|
-                // |        1.0       |          45         |
-                // |         :        |           :         |
-                // |         :        |         Lerp        |
-                // |         :        |           :         |
-                // |       -1.0       |           0         |
-
-                armRotation.x = (leftPalmVector.y + 1.0f) * 45 / 2.0f;
-
-                //GameLogger.Log(armDot);
-            }
-            else
-            {
-                GameLogger.Log("");
-            }
-            */
-
-            #endregion
-            
-            ApplyRotation(ToSmoothStair(armRotation));
-    }
-
-        private Vector3 SpineVector()
-        {
-            Vector3 shoulderPos = (Landmark(2) + Landmark(0)) * 0.5f;
-            Vector3 hipPos = (Landmark(5) + Landmark(4)) * 0.5f;
-            return (hipPos - shoulderPos).normalized;
+            return Quaternion.Euler(stableEulerAngles);
         }
-        
+
+        private static PoseMatrix LiftingArmMatrix()
+        {
+            return PoseMatrix.SetBasisAndPosition(new Vector3(-1.0f, 0.0f, 0.0f),
+                                                  new Vector3(0.0f, +1.0f, 0.0f),
+                                                  new Vector3(0.0f, 0.0f, -1.0f),
+                                                  new Vector3(0.0f, 0.0f, 0.0f));
+        }
+
     }
 }// namespace Mediapipe.Allocator

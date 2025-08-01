@@ -16,7 +16,7 @@ namespace Mediapipe.Allocator
          *        2               15             left wrist
          */
 
-        public override void ForwardApply(Rotation? parentRotation = null)
+        public override void ForwardApply(PoseMatrix? parentMatrix = null)
         {
 
         }

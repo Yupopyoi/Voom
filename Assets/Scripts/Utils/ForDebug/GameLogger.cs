@@ -2,6 +2,7 @@ using Mediapipe.Allocator;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public static class GameLogger
 {
@@ -37,29 +38,26 @@ public static class GameLogger
 
     public static void Log(float value, string prefixMessage = "Float")
     {
-        logQueue.Enqueue(prefixMessage + $" : {value:F2}");
-        if (logQueue.Count > maxLines)
-            logQueue.Dequeue();
-
-        RefreshTargets();
+        string message = prefixMessage + $" : {value:F2}";
+        Log(message);
     }
 
     public static void Log(float value1, float value2, string prefixMessage = "Float")
     {
-        logQueue.Enqueue(prefixMessage + $" : {value1:F2} , {value2:F2}");
-        if (logQueue.Count > maxLines)
-            logQueue.Dequeue();
-
-        RefreshTargets();
+        string message = prefixMessage + $" : {value1:F2} , {value2:F2}";
+        Log(message);
     }
 
     public static void Log(float value1, float value2, float value3, string prefixMessage = "Float")
     {
-        logQueue.Enqueue(prefixMessage + $" : {value1:F2} , {value2:F2} , {value3:F2}");
-        if (logQueue.Count > maxLines)
-            logQueue.Dequeue();
+        string message = prefixMessage + $" : {value1:F2} , {value2:F2} , {value3:F2}";
+        Log(message);
+    }
 
-        RefreshTargets();
+    public static void Log(bool b, string prefixMessage = "Bool")
+    {
+        string message = prefixMessage + $" : {(b ? "True" : "False")}";
+        Log(message);
     }
 
     public static void Log(Vector3 logv, int digits = 2)
@@ -72,10 +70,47 @@ public static class GameLogger
         TwoPointsLog(logv1, logv2);
     }
 
-
-    public static void Log(Quaternion logq, int digits = 2)
+    public static void Log(Quaternion logq, int digits = 2, bool _displayAsQuaternion = false)
     {
-        Vector3Log(logq.eulerAngles, digits);
+        if(_displayAsQuaternion)
+        {
+            string message;
+            switch (digits)
+            {
+                case 1:
+                    message = $"x : {logq.x:F1}, y : {logq.y:F1}, z : {logq.z:F1}, w : {logq.w:F1}";
+                    break;
+                case 2:
+                    message = $"x : {logq.x:F2} , y :  {logq.y:F2}, z : {logq.z:F2}, w : {logq.w:F2}";
+                    break;
+                case 3:
+                    message = $"x : {logq.x:F3} , y :  {logq.y:F3}, z : {logq.z:F3}, w : {logq.w:F3}";
+                    break;
+                default:
+                    message = $"x : {logq.x:F2} , y :  {logq.y:F2}, z : {logq.z:F2}, w : {logq.w:F2}";
+                    break;
+            }
+            Log(message);
+        }
+        else
+        {
+            Vector3Log(logq.eulerAngles, digits);
+        }
+    }
+
+    public static void Log(Vector3 logv, float f, int digits = 2)
+    {
+        Vector3Log(logv, f, digits);
+    }
+
+    public static void Log(Quaternion logq, float f, int digits = 2)
+    {
+        Vector3Log(logq.eulerAngles, f, digits);
+    }
+
+    public static void Log(Vector4 logv, int digits = 2)
+    {
+        Vector4Log(logv, digits);
     }
 
     public static void Vector3Log(Vector3 logv, int digits = 2)
@@ -97,21 +132,51 @@ public static class GameLogger
                 break;
         }
 
-        logQueue.Enqueue(message);
-        if (logQueue.Count > maxLines)
-            logQueue.Dequeue();
-
-        RefreshTargets();
+        Log(message);
     }
 
-    public static void RotationLog(Rotation rot)
+    public static void Vector3Log(Vector3 logv, float f, int digits = 2)
     {
-        Vector3Log(rot.ToVector3);
+        string message;
+        switch (digits)
+        {
+            case 1:
+                message = $"x : {logv.x:F1}, y : {logv.y:F1}, z : {logv.z:F1} / F : {f:F1}";
+                break;
+            case 2:
+                message = $"x : {logv.x:F2}, y : {logv.y:F2}, z : {logv.z:F2} / F : {f:F2}";
+                break;
+            case 3:
+                message = $"x : {logv.x:F3}, y : {logv.y:F3}, z : {logv.z:F3} / F : {f:F3}";
+                break;
+            default:
+                message = $"x : {logv.x:F2}, y : {logv.y:F2}, z : {logv.z:F2} / F : {f:F2}";
+                break;
+        }
+
+        Log(message);
     }
 
-    public static void RotationLog(Rotation? rot)
+    public static void Vector4Log(Vector4 logv, int digits = 2)
     {
-        Vector3Log(rot.GetValueOrDefault().ToVector3);
+        string message;
+        switch (digits)
+        {
+            case 1:
+                message = $"x1 : {logv.x:F1}, y1 : {logv.y:F1}, x2 : {logv.z:F1}, y2 : {logv.w:F1}";
+                break;
+            case 2:
+                message = $"x1 : {logv.x:F2}, y1 : {logv.y:F2}, x2 : {logv.z:F2}, y2 : {logv.w:F2}";
+                break;
+            case 3:
+                message = $"x1 : {logv.x:F3}, y1 : {logv.y:F3}, x2 : {logv.z:F3}, y2 : {logv.w:F3}";
+                break;
+            default:
+                message = $"x1 : {logv.x:F2}, y1 : {logv.y:F2}, x2 : {logv.z:F2}, y2 : {logv.w:F2}";
+                break;
+        }
+
+        Log(message);
     }
 
     public static void TwoPointsLog(Vector3 point1, Vector3 point2)
@@ -119,11 +184,7 @@ public static class GameLogger
         string message = $"x1 : {point1.x:F2}, y1 : {point1.y:F2}, z1 : {point1.z:F2}\n" +
                          $"x2 : {point2.x:F2}, y2 : {point2.y:F2}, z2 : {point2.z:F2}\n" +
                          $"dx : {(point2-point1).x:F2}, dy : {(point2 - point1).y:F2}, dz : {(point2 - point1).z:F2}";
-        logQueue.Enqueue(message);
-        if (logQueue.Count > maxLines)
-            logQueue.Dequeue();
-
-        RefreshTargets();
+        Log(message);
     }
 
     private static void RefreshTargets()
