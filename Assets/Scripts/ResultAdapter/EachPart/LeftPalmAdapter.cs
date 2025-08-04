@@ -5,8 +5,8 @@ namespace Mediapipe.Allocator
 {
     public class LeftPalmAdapter : TrackingAdapterBase
     {
-        public LeftPalmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool unfixX = false, bool unfixY = false, bool unfixZ = true)
-                        : base(partObject, landmarksPacket, sleeve, unfixX, unfixY, unfixZ) { }
+        public LeftPalmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
+                        : base(partObject, landmarksPacket, sleeve) { }
 
         /*  [Landmark Index]
          * 
@@ -16,7 +16,7 @@ namespace Mediapipe.Allocator
          *        2               15             left wrist
          */
 
-        public override void ForwardApply(PoseMatrix? parentMatrix = null)
+        public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
 
         }

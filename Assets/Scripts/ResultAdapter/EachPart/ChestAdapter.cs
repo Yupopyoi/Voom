@@ -1,13 +1,12 @@
 ﻿using UnityEngine;
-using UnityEngine.UIElements.Experimental;
 using VRMController;
 
 namespace Mediapipe.Allocator
 {
     public class ChestAdapter : TrackingAdapterBase
     {
-        public ChestAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool unfixX = false, bool unfixY = false, bool unfixZ = true)
-            : base(partObject, landmarksPacket, sleeve, unfixX, unfixY, unfixZ) { }
+        public ChestAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
+            : base(partObject, landmarksPacket, sleeve) { }
 
         /*  [Landmark Index]
          * 
@@ -24,7 +23,7 @@ namespace Mediapipe.Allocator
         private Vector3 _leftHip;
         private Vector3 _rightHip;
 
-        public override void ForwardApply(PoseMatrix? parentMatrix = null)
+        public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             _leftShoulder = Landmark(0);
             _rightShoulder = Landmark(1);
@@ -52,7 +51,7 @@ namespace Mediapipe.Allocator
                 // This prevents meaningless vibrations from occurring in the model when you are stationary.
                 Quaternion stableRotationLHS = ToSmoothStair(localMatrix.RotationLHS);
 
-                ApplyRotation(stableRotationLHS);
+                ApplyRotation(PreventUnwantedRotation(stableRotationLHS));
             }
         }
     }

@@ -6,6 +6,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Numerics;
+
 
 // TODO: use System.MathF
 using Mathf = UnityEngine.Mathf;
@@ -167,6 +169,8 @@ namespace Mediapipe.Tasks.Components.Containers
 #pragma warning restore IDE0004 // for Unity 2020.3.x
       );
     }
+
+    public UnityEngine.Vector3 ToVector3() => new (x, y, z);
 
     public override string ToString()
       => $"{{ \"x\": {x}, \"y\": {y}, \"z\": {z}, \"visibility\": {Util.Format(visibility)}, \"presence\": {Util.Format(presence)}, \"name\": \"{name}\" }}";

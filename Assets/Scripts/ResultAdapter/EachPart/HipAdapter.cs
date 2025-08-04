@@ -6,9 +6,8 @@ namespace Mediapipe.Allocator
 {
     public class HipAdapter : TrackingAdapterBase
     {
-        public HipAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool unfixX = false, bool unfixY = false, bool unfixZ = true)
-            : base(partObject, landmarksPacket, sleeve, unfixX, unfixY, unfixZ) {
-        }
+        public HipAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
+                                                            : base(partObject, landmarksPacket, sleeve) {}
 
         /*  [Landmark Index]
          * 
@@ -19,7 +18,7 @@ namespace Mediapipe.Allocator
          *        3               12           right shoulder
          */
 
-        public override void ForwardApply(PoseMatrix? parentMatrix = null)
+        public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             Vector3 leftHip = Landmark(0);
             Vector3 rightHip = Landmark(1);
@@ -46,7 +45,7 @@ namespace Mediapipe.Allocator
             // This prevents meaningless vibrations from occurring in the model when you are stationary.
             Quaternion stableRotationLHS = ToSmoothStair(_poseMatrix.RotationLHS);
 
-            ApplyRotation(stableRotationLHS);
+            ApplyRotation(PreventUnwantedRotation(stableRotationLHS));
         }
 
         private static PoseMatrix NeutralHipMatrix()

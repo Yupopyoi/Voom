@@ -4,14 +4,22 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-using Mediapipe.Tasks.Vision.PoseLandmarker;
 using UniVRM10;
 using VRMController;
+
+using System.Collections.ObjectModel;
+using Mediapipe.Tasks.Vision.PoseLandmarker;
 
 namespace Mediapipe.Allocator
 {
     public class PoseAdaptationManager : AdaptationManagerBase<PoseLandmarkerResult>
     {
+        public ReadOnlyCollection<Tasks.Components.Containers.NormalizedLandmark> Landmarks => _landmarks.AsReadOnly();
+
+        // Entire Body (Root)
+        LandmarksPacket _entireBodyPacket;
+        BodyPositionAdapter _bodyPositionAdapter;
+
         // Torso
         LandmarksPacket _hipPacket;
         HipAdapter _hipAdapter;
@@ -19,12 +27,31 @@ namespace Mediapipe.Allocator
         ChestAdapter _chestAdapter;
 
         // Left Arm
-        LandmarksPacket _leftUpperArmPacket;
-        LeftUpperArmAdapter _leftUpperArmAdapter;
-        LandmarksPacket _leftLowerArmPacket;
-        LeftLowerArmAdapter _leftLowerArmAdapter;
+        LandmarksPacket _leftArmPacket;
+        UpperArmAdapter _leftUpperArmAdapter;
+        LowerArmAdapter _leftLowerArmAdapter;
 
-        bool _usePoseAdaptation = true;
+        // Right Arm
+        LandmarksPacket _rightArmPacket;
+        UpperArmAdapter _rightUpperArmAdapter;
+        LowerArmAdapter _rightLowerArmAdapter;
+
+        // Head
+        LandmarksPacket _headPacket;
+        HeadAdapter _headAdapter;
+
+        // Left Leg
+        LandmarksPacket _leftLegPacket;
+        UpperLegAdapter _leftUpperLegAdapter;
+        LowerLegAdapter _leftLowerLegAdapter;
+        LandmarksPacket _leftFootPacket;
+        FootAdapter _leftFootAdapter;
+
+        // Right Leg
+        LandmarksPacket _rightLegPacket;
+        UpperLegAdapter _rightUpperLegAdapter;
+        LowerLegAdapter _rightLowerLegAdapter;
+
         Sleeve sleeve;
 
         public PalmVectors PalmVectors{ private get; set; }
@@ -42,23 +69,40 @@ namespace Mediapipe.Allocator
 
             // Definition of "Adapters" that apply the result of MediaPipe to each part
             // and "Packets" that convey information to Adapter.
+            _entireBodyPacket = new(_landmarks, new int[4] { 11, 12, 23, 24 });
+            _bodyPositionAdapter = new(FindChildByName("Root"), _entireBodyPacket, Sleeve);
+
             _hipPacket = new(_landmarks, new int[4] { 23, 24, 11, 12 });
-            _hipAdapter = new(FindChildByName("Hip"), _hipPacket, Sleeve, false, false, true);
+            _hipAdapter = new(FindChildByName("Hip"), _hipPacket, Sleeve);
 
             _chestPacket = new(_landmarks, new int[4] { 11, 12, 23, 24});
-            _chestAdapter = new(FindChildByName("Chest"), _chestPacket, Sleeve , true, true, true);
+            _chestAdapter = new(FindChildByName("Chest"), _chestPacket, Sleeve);
 
-            _leftUpperArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });
-            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftUpperArmPacket, Sleeve, true, true, true);
+            _leftArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });
+            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftArmPacket, Sleeve, isLeft: true);
+            _leftLowerArmAdapter = new(FindChildByName("L_LowerArm"), _leftArmPacket, Sleeve, isLeft: true);
 
-            _leftLowerArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });
-            _leftLowerArmAdapter = new(FindChildByName("L_LowerArm"), _leftUpperArmPacket, Sleeve, false, false, true);
+            _rightArmPacket = new(_landmarks, new int[6] { 12, 14, 11, 16, 24, 23 });
+            _rightUpperArmAdapter = new(FindChildByName("R_UpperArm"), _rightArmPacket, Sleeve, isLeft:false);
+            _rightLowerArmAdapter = new(FindChildByName("R_LowerArm"), _rightArmPacket, Sleeve, isLeft: false);
+
+            _leftLegPacket = new(_landmarks, new int[7] { 11, 12, 23, 24, 25, 27, 28 });
+            _leftUpperLegAdapter = new(FindChildByName("L_UpperLeg"), _leftLegPacket, Sleeve, isLeft: true);
+            _leftLowerLegAdapter = new(FindChildByName("L_LowerLeg"), _leftLegPacket, Sleeve, isLeft: true);
+
+            _leftFootPacket = new(_landmarks, new int[4] { 25, 27, 29, 31 });
+            _leftFootAdapter = new(FindChildByName("L_Foot"), _leftFootPacket, Sleeve, isLeft: true);
+
+            _rightLegPacket = new(_landmarks, new int[7] { 12, 11, 24, 23, 26, 28, 27 });
+            _rightUpperLegAdapter = new(FindChildByName("R_UpperLeg"), _rightLegPacket, Sleeve, isLeft: false);
+            _rightLowerLegAdapter = new(FindChildByName("R_LowerLeg"), _rightLegPacket, Sleeve, isLeft: false);
+
+            _headPacket = new(_landmarks, new int[4] { 7, 8, 11, 12 });
+            _headAdapter = new(FindChildByName("Head"), _headPacket, Sleeve);
         }
 
         public override void ApplyMediapipeResult(PoseLandmarkerResult recognitionResult)
         {
-            if (!_usePoseAdaptation) return;
-
             for (int i = 0; i < _landmarks.Count; i++)
             {
                 _landmarks[i] = recognitionResult.poseLandmarks[0].landmarks[i];
@@ -69,12 +113,25 @@ namespace Mediapipe.Allocator
                 return;
             }
 
+            //_bodyPositionAdapter.ForwardApply();
+
             _hipAdapter.ForwardApply();
             _chestAdapter.ForwardApply(_hipAdapter.PoseMatrix);
-            _leftUpperArmAdapter.ForwardApply(_chestAdapter.PoseMatrix);
-            _leftLowerArmAdapter.ForwardApply(_leftUpperArmAdapter.PoseMatrix);
+            _leftUpperArmAdapter.ForwardApply();
+            _leftLowerArmAdapter.ForwardApply();
 
-           // _leftUpperArmAdapter.ReverseApply(PalmVectors);
+            _rightUpperArmAdapter.ForwardApply();
+            _rightLowerArmAdapter.ForwardApply();
+
+            _leftUpperLegAdapter.ForwardApply(parentQuaternion: _hipAdapter.LatestQuaternion);
+            _leftLowerLegAdapter.ForwardApply();
+
+            _leftFootAdapter.ForwardApply();
+
+            _rightUpperLegAdapter.ForwardApply(parentQuaternion: _hipAdapter.LatestQuaternion);
+            _rightLowerLegAdapter.ForwardApply();
+
+            _headAdapter.ForwardApply(parentQuaternion : _hipAdapter.LatestQuaternion * _chestAdapter.LatestQuaternion);
         }
     }
 

@@ -74,7 +74,7 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
                     {
                         _elapsedSum = 0.0;
                         double fps = 1000.0 / elapsed;
-                        _fpsText.text = $"FPS : {fps:F1}";
+                        _fpsText.text = $"MP FPS : {fps:F1}";
                     }
                 }
                 else

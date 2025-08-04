@@ -18,44 +18,6 @@ namespace Mediapipe.Allocator
         Dictionary<string, Vector3> GetNamedVectors();
     }
 
-    public struct Rotation : INamedVector
-    {
-        public float x;
-        public float y;
-        public float z;
-
-        public Rotation(float x, float y, float z)
-        {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        public Rotation(Vector3 rot)
-        {
-            this.x = rot.x;
-            this.y = rot.y;
-            this.z = rot.z;
-        }
-
-        public readonly Vector3 ToVector3 => new(x, y, z);
-
-        public override readonly string ToString()
-        {
-            return $"Rotation (x: {x}, y: {y}, z: {z})";
-        }
-
-        public readonly Dictionary<string, Vector3> GetNamedVectors()
-        {
-            return new()
-            {
-                { "Rotation", ToVector3 }
-            };
-        }
-
-        public readonly Quaternion ToQuaternion => Quaternion.Euler(x, y, z);
-    }
-
     public struct LandmarksPacket
     {
         public List<Tasks.Components.Containers.NormalizedLandmark> Landmarks { get; private set; }

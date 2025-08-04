@@ -74,7 +74,7 @@ namespace Mediapipe.Allocator
 
     interface IPoseAdapter
     {
-        void ForwardApply(PoseMatrix? parentMatrix = null);
+        void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null);
         void ReverseApply(INamedVector childMessage);
     }
 
@@ -88,15 +88,14 @@ namespace Mediapipe.Allocator
 
         private Vector3 _initTransform;
         private LandmarksPacket _landmarksPacket;
-        private bool[] _unfixAxis = new bool[3];
 
         protected PoseMatrix _poseMatrix;
 
         private const int CACHE_SIZE = 50;
-        private int _validCacheSize = 15;
+        private int _validCacheSize = 10;
         private readonly Queue<Quaternion> _quaternionCache;
 
-        public Quaternion LatestQuaternion => AverageQuaternion();
+        public Quaternion LatestQuaternion => AverageQuaternion(isDebug : false);
 
         public PoseMatrix PoseMatrix { get { return _poseMatrix; } set { _poseMatrix = value; } }
 
@@ -111,8 +110,7 @@ namespace Mediapipe.Allocator
             }
         }
 
-        protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve,
-                                      bool unfixX = true, bool unfixY = true, bool unfixZ = false)
+        protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
         {
             _partObject = partObject;
 
@@ -121,10 +119,6 @@ namespace Mediapipe.Allocator
             _initTransform.z = _partObject.transform.localEulerAngles.z;
 
             _landmarksPacket = landmarksPacket;
-
-            _unfixAxis[0] = unfixX;
-            _unfixAxis[1] = unfixY;
-            _unfixAxis[2] = unfixZ;
 
             _quaternionCache = new(capacity: CACHE_SIZE);
 
@@ -174,13 +168,43 @@ namespace Mediapipe.Allocator
             }
         }
 
+        protected float LandmarkVisibilityValue(int index)
+        {
+            if (index < _landmarksPacket.Capacity)
+            {
+                if (_landmarksPacket.GetLandmark(index).visibility == null) return 0.0f;
+                return _landmarksPacket.GetLandmark(index).visibility.Value;
+            }
+            else
+            {
+                Debug.Log($"The index exceeds the bounds of the List. | index : {index}");
+
+                return 0.0f;
+            }
+        }
+
+        protected float LandmarkPresenceValue(int index)
+        {
+            if (index < _landmarksPacket.Capacity)
+            {
+                if (_landmarksPacket.GetLandmark(index).presence == null) return 0.0f;
+                return _landmarksPacket.GetLandmark(index).presence.Value;
+            }
+            else
+            {
+                Debug.Log($"The index exceeds the bounds of the List. | index : {index}");
+
+                return 0.0f;
+            }
+        }
+
         /// <summary>
         /// Apply angles from the center of the body outward as they are derived.
         /// For example, when considering arm movement,
         /// the body (torso) is the “parent” and we calculate the amount of arm rotation as its “child”.
         /// This is the (abstract) method for such adaptation, and this must be implemented in all parts of the body.
         /// </summary>
-        public abstract void ForwardApply(PoseMatrix? parentMatrix = null);
+        public abstract void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null);
 
         /// <summary>
         /// This is reversed, applying changes from the tip of the body toward the center.
@@ -190,7 +214,12 @@ namespace Mediapipe.Allocator
         /// </summary>
         public virtual void ReverseApply(INamedVector childMessage) { }
 
-        protected virtual Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS) { return smoothedRotationLHS; }
+        protected virtual Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS, bool isDebug = false) 
+        {
+            if (isDebug) GameLogger.Log(smoothedRotationLHS);
+
+            return smoothedRotationLHS; 
+        }
 
         #region Static Utils
 

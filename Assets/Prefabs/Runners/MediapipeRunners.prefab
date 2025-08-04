@@ -104,6 +104,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8109244756611390400}
+  - component: {fileID: 4785485188404669625}
   m_Layer: 0
   m_Name: MediapipeRunners
   m_TagString: Untagged
@@ -135,6 +136,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4785485188404669625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664130145837469655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcf3ab70f05dd5e45baec71fdd1a799d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _pauseAll: 0
+  _faceLandmarkerRunner: {fileID: 489523734447600494}
+  _handLandmarkerRunner: {fileID: 8450501431383077399}
+  _poseLandmarkerRunner: {fileID: 3245773516361761059}
 --- !u!1 &3701515925045526976
 GameObject:
   m_ObjectHideFlags: 0
@@ -213,21 +230,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   annotation: {fileID: 2257652704555239156}
   _drawAnnotation: 0
-  onFaceTargetUpdated:
+  onHandTargetUpdated:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5673237984528609402}
-        m_TargetAssemblyTypeName: VRMController.VRMAllocator, Assembly-CSharp
-        m_MethodName: EntryHandAdaptation
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!1 &4436994354325900868
 GameObject:
   m_ObjectHideFlags: 0
@@ -488,3 +493,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _operationDimension: 0
+  _sleeve: 0

@@ -1,13 +1,19 @@
-using Mediapipe.Allocator;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
+
+public static class LogUtils
+{ 
+    public static string TimeStamp()
+    {
+        return System.DateTime.Now.ToString("HH-mm-ss");
+    }
+}
 
 public static class GameLogger
 {
-    private static List<TextMeshProUGUI> logTargets = new List<TextMeshProUGUI>();
-    private static Queue<string> logQueue = new Queue<string>();
+    private static List<TextMeshProUGUI> logTargets = new();
+    private static Queue<string> logQueue = new();
     private const int maxLines = 1;
 
     public static void RegisterTarget(TextMeshProUGUI target)
@@ -42,13 +48,13 @@ public static class GameLogger
         Log(message);
     }
 
-    public static void Log(float value1, float value2, string prefixMessage = "Float")
+    public static void Log(float value1, float value2, string prefixMessage = "Floats")
     {
         string message = prefixMessage + $" : {value1:F2} , {value2:F2}";
         Log(message);
     }
 
-    public static void Log(float value1, float value2, float value3, string prefixMessage = "Float")
+    public static void Log(float value1, float value2, float value3, string prefixMessage = "Floats")
     {
         string message = prefixMessage + $" : {value1:F2} , {value2:F2} , {value3:F2}";
         Log(message);
@@ -58,6 +64,11 @@ public static class GameLogger
     {
         string message = prefixMessage + $" : {(b ? "True" : "False")}";
         Log(message);
+    }
+
+    public static void Log(Vector2 logv, int digits = 2)
+    {
+        Vector2Log(logv, digits);
     }
 
     public static void Log(Vector3 logv, int digits = 2)
@@ -70,31 +81,31 @@ public static class GameLogger
         TwoPointsLog(logv1, logv2);
     }
 
-    public static void Log(Quaternion logq, int digits = 2, bool _displayAsQuaternion = false)
+    public static void Log(Quaternion logq, int digits = 2, bool _displayAsQuaternion = false, string prefix = "")
     {
         if(_displayAsQuaternion)
         {
-            string message;
+            string message = prefix;
             switch (digits)
             {
                 case 1:
-                    message = $"x : {logq.x:F1}, y : {logq.y:F1}, z : {logq.z:F1}, w : {logq.w:F1}";
+                    message += $"x : {logq.x:F1}, y : {logq.y:F1}, z : {logq.z:F1}, w : {logq.w:F1}";
                     break;
                 case 2:
-                    message = $"x : {logq.x:F2} , y :  {logq.y:F2}, z : {logq.z:F2}, w : {logq.w:F2}";
+                    message += $"x : {logq.x:F2} , y :  {logq.y:F2}, z : {logq.z:F2}, w : {logq.w:F2}";
                     break;
                 case 3:
-                    message = $"x : {logq.x:F3} , y :  {logq.y:F3}, z : {logq.z:F3}, w : {logq.w:F3}";
+                    message += $"x : {logq.x:F3} , y :  {logq.y:F3}, z : {logq.z:F3}, w : {logq.w:F3}";
                     break;
                 default:
-                    message = $"x : {logq.x:F2} , y :  {logq.y:F2}, z : {logq.z:F2}, w : {logq.w:F2}";
+                    message += $"x : {logq.x:F2} , y :  {logq.y:F2}, z : {logq.z:F2}, w : {logq.w:F2}";
                     break;
             }
             Log(message);
         }
         else
         {
-            Vector3Log(logq.eulerAngles, digits);
+            Vector3Log(logq.eulerAngles, digits, prefix:prefix);
         }
     }
 
@@ -113,22 +124,44 @@ public static class GameLogger
         Vector4Log(logv, digits);
     }
 
-    public static void Vector3Log(Vector3 logv, int digits = 2)
+    public static void Vector2Log(Vector2 logv, int digits = 2, string prefix = "")
     {
-        string message;
+        string message = prefix;
         switch (digits)
         {
             case 1:
-                message = $"x : {logv.x:F1}, y : {logv.y:F1}, z : {logv.z:F1}";
+                message += $"x : {logv.x:F1}, y : {logv.y:F1}";
                 break;
             case 2:
-                message = $"x : {logv.x:F2}, y : {logv.y:F2}, z : {logv.z:F2}";
+                message += $"x : {logv.x:F2}, y : {logv.y:F2}";
                 break;
             case 3:
-                message = $"x : {logv.x:F3}, y : {logv.y:F3}, z : {logv.z:F3}";
+                message += $"x : {logv.x:F3}, y : {logv.y:F3}";
                 break;
             default:
-                message = $"x : {logv.x:F2}, y : {logv.y:F2}, z : {logv.z:F2}";
+                message += $"x : {logv.x:F2}, y : {logv.y:F2}";
+                break;
+        }
+
+        Log(message);
+    }
+
+    public static void Vector3Log(Vector3 logv, int digits = 2, string prefix = "")
+    {
+        string message = prefix;
+        switch (digits)
+        {
+            case 1:
+                message += $"x : {logv.x:F1}, y : {logv.y:F1}, z : {logv.z:F1}";
+                break;
+            case 2:
+                message += $"x : {logv.x:F2}, y : {logv.y:F2}, z : {logv.z:F2}";
+                break;
+            case 3:
+                message += $"x : {logv.x:F3}, y : {logv.y:F3}, z : {logv.z:F3}";
+                break;
+            default:
+                message += $"x : {logv.x:F2}, y : {logv.y:F2}, z : {logv.z:F2}";
                 break;
         }
 
@@ -183,7 +216,8 @@ public static class GameLogger
     {
         string message = $"x1 : {point1.x:F2}, y1 : {point1.y:F2}, z1 : {point1.z:F2}\n" +
                          $"x2 : {point2.x:F2}, y2 : {point2.y:F2}, z2 : {point2.z:F2}\n" +
-                         $"dx : {(point2-point1).x:F2}, dy : {(point2 - point1).y:F2}, dz : {(point2 - point1).z:F2}";
+                         $"dx : {(point2-point1).x:F2}, dy : {(point2 - point1).y:F2}, dz : {(point2 - point1).z:F2}\n" + 
+                         $"Dot : {Vector3.Dot(point1.normalized, point2.normalized):F2}";
         Log(message);
     }
 

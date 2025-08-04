@@ -4,12 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-using UnityEngine;
-
 using Mediapipe.Allocator;
-using Mediapipe.Tasks.Vision.PoseLandmarker;
 using Mediapipe.Tasks.Vision.FaceLandmarker;
 using Mediapipe.Tasks.Vision.HandLandmarker;
+using Mediapipe.Tasks.Vision.PoseLandmarker;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using UnityEngine;
 
 namespace VRMController
 {
@@ -34,7 +35,7 @@ namespace VRMController
 
         public void Allocate()
         {
-            if(_poseAdaptationManager != null)
+            if (_poseAdaptationManager != null)
             {
                 _poseAdaptationManager = null;
             }
@@ -94,5 +95,15 @@ namespace VRMController
             }
         }
 
+        public ReadOnlyCollection<Mediapipe.Tasks.Components.Containers.NormalizedLandmark> Landmarks()
+        {
+            if (_poseAdaptationManager == null)
+            {
+                return new ReadOnlyCollection<Mediapipe.Tasks.Components.Containers.NormalizedLandmark>
+                    (new List<Mediapipe.Tasks.Components.Containers.NormalizedLandmark>());
+            }
+
+            return _poseAdaptationManager.Landmarks;
+        }
     }
 }// namespace VRMController
