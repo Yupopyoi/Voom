@@ -54,5 +54,21 @@ namespace Mediapipe.Allocator
                 ApplyRotation(PreventUnwantedRotation(stableRotationLHS));
             }
         }
+
+        protected override Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS, bool isDebug = false)
+        {
+            var stableEulerAngles = smoothedRotationLHS.eulerAngles;
+
+            if (stableEulerAngles.x > 180.0f) stableEulerAngles.x -= 360.0f;
+
+            stableEulerAngles.x *= -1.0f;
+
+            if (stableEulerAngles.y > 180.0f) stableEulerAngles.y -= 360.0f;
+            if (stableEulerAngles.z > 180.0f) stableEulerAngles.z -= 360.0f;
+
+            if (isDebug) GameLogger.Log(stableEulerAngles);
+
+            return Quaternion.Euler(stableEulerAngles);
+        }
     }
 }// namespace Mediapipe.Allocator

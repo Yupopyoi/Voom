@@ -47,7 +47,6 @@ namespace Mediapipe.Allocator
                 return;
             }
 
-            
             Vector3 knee = Landmark(0);
             Vector3 ankle = Landmark(1);
             Vector3 heel = Landmark(2);
@@ -55,8 +54,6 @@ namespace Mediapipe.Allocator
 
             Vector3 lowerLeg = (ankle - knee).normalized;
             Vector3 footVector = (footIndex - heel).normalized;
-
-            //GameLogger.Log(footVector);
 
             //float absDot = Mathf.Abs(Vector2.Dot(upperLeg, lowerLeg));
 

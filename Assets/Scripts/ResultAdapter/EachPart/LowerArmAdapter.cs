@@ -22,8 +22,6 @@ namespace Mediapipe.Allocator
          *   |     1      |        13 / 14         |       elbow       |
          *   |     2      |        12 / 11         | opposite shoulder |
          *   |     3      |        15 / 16         |       wrist       |
-         *   |     4      |        23 / 24         |        hip        |
-         *   |     5      |        24 / 23         |    opposite hip   |
          */
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
@@ -32,21 +30,10 @@ namespace Mediapipe.Allocator
             {
                 // As a result of extending the arm, the wrist is considered to be outside the screen,
                 // so the model's arm is fixed straight.
-                _poseMatrix = NeutralArmMatrix();
+                _poseMatrix = NeutralMatrix();
 
                 ApplyRotation(_poseMatrix.RotationLHS);
                 return;
-            }
-
-            if (IsInTorsoArea(Landmark(3)) /* The wrist is in front of the torso */)
-            {
-                // This is not work.
-                // I will delete this section soon.
-                
-                //_poseMatrix = BentArmMatrix();
-
-                //ApplyRotation(_poseMatrix.RotationLHS);
-                //return;
             }
 
             Vector3 elbow = Landmark(1);
@@ -82,7 +69,8 @@ namespace Mediapipe.Allocator
 
             // Mixing the straight state and the curved state detected by Mediapipe using Slerp.
             Quaternion finalRotation 
-                = Quaternion.Slerp(ToSmoothStair(_poseMatrix.RotationLHS), NeutralArmMatrix().RotationLHS, dot);
+                //= Quaternion.Slerp(ToSmoothStair(_poseMatrix.RotationLHS), NeutralMatrix().RotationLHS, ToSmoothStair(dot, 1.0f, 4));
+                = Quaternion.Slerp(_poseMatrix.RotationLHS, NeutralMatrix().RotationLHS, ToSmoothStair(dot, 1.0f, 4));
 
             ApplyRotation(PreventUnwantedRotation(finalRotation));
         }

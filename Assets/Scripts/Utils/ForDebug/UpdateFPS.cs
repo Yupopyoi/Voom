@@ -1,4 +1,9 @@
-using System.Collections.Generic;
+// Copyright (c) 2025 Yupopyoi
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
 using TMPro;
 using UnityEngine;
 
@@ -6,10 +11,6 @@ using UnityEngine;
 public class UpdateFPS : MonoBehaviour
 {
     private TextMeshProUGUI textComponent;
-    private Queue<float> deltaTimeQueue = new Queue<float>();
-    private const int Interval = 10;
-
-    private int counter = 0;
 
     private void Awake()
     {
@@ -18,28 +19,6 @@ public class UpdateFPS : MonoBehaviour
 
     private void Update()
     {
-        deltaTimeQueue.Enqueue(Time.deltaTime);
-
-        if (deltaTimeQueue.Count > Interval)
-        {
-            deltaTimeQueue.Dequeue();
-        }
-
-        if (counter++ < Interval) return;
-
-        // •½‹ÏFPS‚ðŒvŽZ
-        float sum = 0f;
-        foreach (var dt in deltaTimeQueue)
-        {
-            sum += dt;
-        }
-
-        float averageDeltaTime = sum / deltaTimeQueue.Count;
-        float averageFPS = 1f / averageDeltaTime;
-
-        // •\Ž¦
-        textComponent.text = $"Update FPS : {averageFPS:F1}";
-
-        counter = 0;
+        textComponent.text = $"Update FPS : {FPSHolder.UnityUpdateFPS:F1}";
     }
 }

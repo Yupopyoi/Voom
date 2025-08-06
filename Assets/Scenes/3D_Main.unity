@@ -1444,7 +1444,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3970216358077135687, guid: 1d0d5360e5a658c4c9c941a0ec424438, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5412073026316213842, guid: 1d0d5360e5a658c4c9c941a0ec424438, type: 3}
       propertyPath: m_Enabled
@@ -1596,6 +1596,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1632311660}
+  - component: {fileID: 1632311661}
   - component: {fileID: 1632311659}
   m_Layer: 0
   m_Name: ApplicationManager
@@ -1632,6 +1633,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1632311661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1632311658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23e792b34f6285044a3acaa9950a9ae6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &1769318816 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1364452303665735474, guid: 3be0660f863afd54e97ff2204b0c499f, type: 3}
@@ -1918,7 +1931,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5512522161097604203, guid: 3be0660f863afd54e97ff2204b0c499f, type: 3}
       propertyPath: _setInitialIndex
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5572068772060978711, guid: 3be0660f863afd54e97ff2204b0c499f, type: 3}
       propertyPath: canvasTransform

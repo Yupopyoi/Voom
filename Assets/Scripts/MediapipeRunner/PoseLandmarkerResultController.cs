@@ -33,6 +33,8 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
         private double _elapsedSum = 0.0;
         private const double UPDATE_INTERVAL = 500.0;
 
+        float _mediaPipeFPS = 0.0f;
+
         public void InitScreen(int maskWidth, int maskHeight) => annotation.InitMask(maskWidth, maskHeight);
 
         public void DrawNow(PoseLandmarkerResult target)
@@ -56,26 +58,30 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
         {
             isStale = false;
 
-            if (_currentTarget.poseLandmarks != null)
+            if (_currentTarget.poseLandmarks == null) return;
+            
+            onPoseTargetUpdated?.Invoke(_currentTarget);
+
+            if(_drawAnnotation)
             {
-                onPoseTargetUpdated?.Invoke(_currentTarget);
+                annotation.Draw(_currentTarget.poseLandmarks, false);
+            }
 
-                if(_drawAnnotation)
+            double elapsed = _tracker.ElapsedSinceLastCall();
+            _elapsedSum += elapsed;
+
+            if(_elapsedSum > UPDATE_INTERVAL)
+            {
+                _elapsedSum = 0.0;
+                _mediaPipeFPS = (float)(1000.0 / elapsed);
+
+                FPSHolder.MediaPipeFPS = _mediaPipeFPS;
+
+                if (_fpsText == null) return;
+
+                if (_canDisplayFPS)
                 {
-                    annotation.Draw(_currentTarget.poseLandmarks, false);
-                }
-
-                if(_canDisplayFPS)
-                {
-                    double elapsed = _tracker.ElapsedSinceLastCall();
-                    _elapsedSum += elapsed;
-
-                    if(_elapsedSum > UPDATE_INTERVAL)
-                    {
-                        _elapsedSum = 0.0;
-                        double fps = 1000.0 / elapsed;
-                        _fpsText.text = $"MP FPS : {fps:F1}";
-                    }
+                    _fpsText.text = $"MP FPS : {_mediaPipeFPS:F1}";
                 }
                 else
                 {

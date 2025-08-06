@@ -91,7 +91,7 @@ namespace Mediapipe.Allocator
 
             if (stableEulerAngles.x > 180.0f) stableEulerAngles.x -= 360.0f;
 
-            // The number 175 is not a mistake
+            // The number 150 is not a mistake
             // Setting the threshold to 180 makes unintended rotation more likely to occur
             if (stableEulerAngles.y > 150.0f) stableEulerAngles.y -= 360.0f;
 
@@ -106,14 +106,6 @@ namespace Mediapipe.Allocator
             if (isDebug) GameLogger.Log(stableEulerAngles);
 
             return Quaternion.Euler(stableEulerAngles);
-        }
-
-        protected static PoseMatrix NeutralMatrix()
-        {
-            return PoseMatrix.SetBasisAndPosition(new Vector3(-1.0f, 0.0f, 0.0f),
-                                                  new Vector3(0.0f, +1.0f, 0.0f),
-                                                  new Vector3(0.0f, 0.0f, -1.0f),
-                                                  new Vector3(0.0f, 0.0f, 0.0f));
         }
     }
 }// namespace Mediapipe.Allocator

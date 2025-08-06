@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using VRMController;
 
@@ -13,21 +14,11 @@ namespace Mediapipe.Allocator
     public struct PoseMatrix
     {
         public Matrix4x4 Matrix;
-        public bool isValid;
 
-        public PoseMatrix(Matrix4x4 matrix, bool valid = true)
+        public PoseMatrix(Matrix4x4 matrix)
         {
             this.Matrix = matrix;
-            this.isValid = valid;
         }
-
-        public bool IsValid { get { return isValid; }
-            set { isValid = value; } }
-
-        public Vector3 Position => Matrix.GetColumn(3);
-        public Vector3 Forward => Matrix.GetColumn(2);
-        public Vector3 Up => Matrix.GetColumn(1);
-        public Vector3 Right => Matrix.GetColumn(0);
 
         public PoseMatrix Inverse => new(Matrix.inverse);
 
@@ -81,25 +72,29 @@ namespace Mediapipe.Allocator
     // This class provides the functions and declarations necessary for the operation of the various parts of the body.
     // ForwardApply is an abstract method and MUST be implemented in all subclasses.
     // For more details, see https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
-    public abstract class TrackingAdapterBase : IPoseAdapter
+    public abstract class TrackingAdapterBase : MonoBehaviour, IPoseAdapter
     {
-        private GameObject _partObject;
-        private Sleeve _sleeve;
+        private readonly GameObject _partObject;
+        private static Sleeve _sleeve;
 
         private Vector3 _initTransform;
         private LandmarksPacket _landmarksPacket;
 
         protected PoseMatrix _poseMatrix;
 
-        private const int CACHE_SIZE = 50;
-        private int _validCacheSize = 10;
+        protected const int CACHE_SIZE = 50;
+        private static int _validCacheSize = 15;
         private readonly Queue<Quaternion> _quaternionCache;
 
-        public Quaternion LatestQuaternion => AverageQuaternion(isDebug : false);
+        private Quaternion _latestQuaternion;
+
+        public Quaternion LatestQuaternion => _latestQuaternion;
 
         public PoseMatrix PoseMatrix { get { return _poseMatrix; } set { _poseMatrix = value; } }
 
-        public int ValidCacheSize
+        public Vector3 PartObjectPosition => _partObject.transform.position;
+
+        public static int ValidCacheSize
         { 
             get { return _validCacheSize; }
             set 
@@ -123,6 +118,18 @@ namespace Mediapipe.Allocator
             _quaternionCache = new(capacity: CACHE_SIZE);
 
             _sleeve = sleeve;
+
+            _latestQuaternion = _partObject.transform.rotation;
+        }
+
+        protected string PartName()
+        {
+            return _partObject.name;
+        }
+
+        protected bool IsPartNameContains(string partName)
+        {
+            return PartName().Contains(partName);
         }
 
         /// <summary>
@@ -280,10 +287,19 @@ namespace Mediapipe.Allocator
             return t * t;
         }
 
+        protected static PoseMatrix NeutralMatrix()
+        {
+            return PoseMatrix.SetBasisAndPosition(new Vector3(-1.0f, 0.0f, 0.0f),
+                                                  new Vector3(0.0f, +1.0f, 0.0f),
+                                                  new Vector3(0.0f, 0.0f, -1.0f),
+                                                  new Vector3(0.0f, 0.0f, 0.0f));
+        }
+
         #endregion
 
         #region Functions for calculating the amount of rotation
 
+        // Call this function to apply the rotation angle.
         protected void ApplyRotation(Quaternion q, bool isDebug = false)
         {
             AddQuaternionCache(q);
@@ -292,6 +308,7 @@ namespace Mediapipe.Allocator
             if (_partObject != null)
             {
                 _partObject.transform.localRotation = averageQuaternion;
+                _latestQuaternion = averageQuaternion;
             }
         }
 
@@ -312,39 +329,62 @@ namespace Mediapipe.Allocator
                 return Quaternion.Euler(_initTransform);
             }
 
-            Vector4 sum = new(0, 0, 0, 0);
+            // Selecting items to use from the most recent cache
+            List<Quaternion> candidates = _quaternionCache
+                .Skip(Mathf.Max(0, _quaternionCache.Count - _validCacheSize))
+                .ToList();
 
-            int n = 1;
-            foreach (var value in _quaternionCache)
+            Quaternion baseQ = LatestQuaternion;
+            List<float> angles = candidates.Select(q => Quaternion.Angle(baseQ, q)).ToList();
+
+            float mean = angles.Average();
+            float variance = angles.Select(a => (a - mean) * (a - mean)).Average();
+            float stddev = Mathf.Sqrt(variance);
+
+            float threshold = mean + stddev; // Exclude values greater than 1σ.
+
+            // Take the average excluding outliers.
+            Vector4 sum = Vector4.zero;
+            int count = 0;
+
+            for (int i = 0; i < candidates.Count; i++)
             {
-                if (n++ < CACHE_SIZE - _validCacheSize) continue;
-
-                sum.x += value.x;
-                sum.y += value.y;
-                sum.z += value.z;
-                sum.w += value.w;
+                if (Mathf.Abs(angles[i]) <= threshold) {
+                    count++;
+                }
             }
 
-            int c = _validCacheSize;
-
-            Quaternion averageQuaternion = new(sum.x / c, sum.y / c, sum.z / c, sum.w / c);
-
-            if (averageQuaternion.w < 0f)
+            // Prioritize newer data over older data.
+            float finalCount = 0;
+            for (int i = candidates.Count - count; i< candidates.Count; i++)
             {
-                averageQuaternion = averageQuaternion.Negate();
+                if (Mathf.Abs(angles[i]) <= threshold)
+                {
+                    Quaternion q = candidates[i];
+                    sum.x += q.x;
+                    sum.y += q.y;
+                    sum.z += q.z;
+                    sum.w += q.w;
+                    finalCount++;
+                }
             }
 
-            if (isDebug)
+            if (finalCount == 0) return baseQ;
+
+            Quaternion avgQ = new(sum.x / finalCount, sum.y / finalCount, sum.z / finalCount, sum.w / finalCount);
+
+            if (Quaternion.Dot(avgQ, baseQ) < 0f)
             {
-                GameLogger.Log(averageQuaternion, 2);
-                Debug.Log(averageQuaternion.eulerAngles.ToString());
+                avgQ = avgQ.Negate();
             }
 
-            return averageQuaternion;
+            return avgQ;
         }
 
         #endregion
     }
+
+    #region Extensions
 
     public static class QuaternionExtensions
     {
@@ -358,4 +398,30 @@ namespace Mediapipe.Allocator
             return new Quaternion(q.x * a, q.y * a, q.z * a, q.w * a);
         }
     }
+
+    public static class VectorExtensions
+    {
+        public static Vector2 Add(this Vector2 vector, float addValue)
+        {
+            return vector + new Vector2(addValue, addValue);
+        }
+
+        public static Vector3 Add(this Vector3 vector, float addValue)
+        {
+            return vector + new Vector3(addValue, addValue, addValue);
+        }
+
+        public static Vector2 Mul(this Vector2 vector, float mulValue)
+        {
+            return new Vector2(vector.x * mulValue, vector.y * mulValue);
+        }
+
+        public static Vector3 Mul(this Vector3 vector, float mulValue)
+        {
+            return new Vector3(vector.x * mulValue, vector.y * mulValue, vector.z * mulValue);
+        }
+    }
+
+    #endregion
+
 }// namespace Mediapipe.Allocator
