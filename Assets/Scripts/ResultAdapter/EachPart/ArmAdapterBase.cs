@@ -25,6 +25,8 @@ namespace Mediapipe.Allocator
         {
             var stableEulerAngles = smoothedRotationLHS.eulerAngles;
 
+            stableEulerAngles.z -= 10 * RightMinus;
+
             if (stableEulerAngles.x > 270)
             {
                 stableEulerAngles.x = 0.0f;
@@ -38,7 +40,10 @@ namespace Mediapipe.Allocator
                 stableEulerAngles.z -= 360.0f;
             }
 
-            if(isDebug) GameLogger.Log(stableEulerAngles);
+            stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, -90.0f, 90.0f);
+            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -90.0f, 80.0f);
+
+            if (isDebug) GameLogger.Log(stableEulerAngles);
 
             return Quaternion.Euler(stableEulerAngles);
         }

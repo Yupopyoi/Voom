@@ -40,6 +40,11 @@ namespace Mediapipe.Allocator
             return new PoseMatrix(a.Matrix * b.Matrix);
         }
 
+        public Vector3 Position => Matrix.GetColumn(3);
+        public Vector3 Forward => Matrix.GetColumn(2);
+        public Vector3 Up => Matrix.GetColumn(1);
+        public Vector3 Right => Matrix.GetColumn(0);
+
         public void SetColumn(int columnIndex, Vector4 vec4)
         {
             Matrix.SetColumn(columnIndex, vec4);

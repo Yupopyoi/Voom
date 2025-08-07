@@ -141,10 +141,10 @@ namespace Mediapipe.Allocator
 
             // Arm
 
-            _leftUpperArmAdapter.ForwardApply();
+            _leftUpperArmAdapter.ForwardApply(parentMatrix : _chestAdapter.PoseMatrix);
             _leftLowerArmAdapter.ForwardApply();
 
-            _rightUpperArmAdapter.ForwardApply();
+            _rightUpperArmAdapter.ForwardApply(parentMatrix: _chestAdapter.PoseMatrix);
             _rightLowerArmAdapter.ForwardApply();
 
             // Leg
