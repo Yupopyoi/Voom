@@ -24,12 +24,16 @@ namespace Mediapipe.Allocator
 
         private readonly Queue<Vector3> _vecterCache;
 
+        private Vector3 _centerPosition;
+
         public BodyPositionAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
                : base(partObject, landmarksPacket, sleeve)
         { 
             _bodyTransform = partObject.transform; /* Root */
 
             _vecterCache = new(capacity: CACHE_SIZE);
+
+            _centerPosition = Vector3.zero;
         }
 
         /*  [Landmark Index]
@@ -40,22 +44,36 @@ namespace Mediapipe.Allocator
          *   |     1      |           26           |     Right knee    |
          */
 
+        public void RegisterHeight(Vector3 lowerPosition)
+        {
+            if(lowerPosition.y == float.NegativeInfinity)
+            {
+                _centerPosition.y = 0.0f;
+                return;
+            }
+
+            _centerPosition.y = lowerPosition.y;
+        }
+
+
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             if (!LandmarkVisibility(0) && !LandmarkVisibility(1) /* Both knees are not visible */ ) return;
 
-            Vector3 centerPosition = (Landmark(0) + Landmark(1)) * 0.5f; // Range : [0,1]
+            var centerPos = (Landmark(0) + Landmark(1)) * 0.5f; // Range : [0,1]
 
-            centerPosition = centerPosition.Add(-0.5f); // Range : [-0.5,0.5]
+            centerPos = centerPos.Add(-0.5f); // Range : [-0.5,0.5]
 
-            centerPosition = centerPosition.Mul(2.0f); // Range : [-1,1];
+            centerPos = centerPos.Mul(2.0f); // Range : [-1,1];
 
-            ApplyRotation(centerPosition);
+            _centerPosition.x = centerPos.x;
+
+            ApplyPosition(_centerPosition);
         }
 
-        protected void ApplyRotation(Vector3 v, bool isDebug = false)
+        protected void ApplyPosition(Vector3 centerPosition, bool isDebug = false)
         {
-            AddVector3Cache(v);
+            AddVector3Cache(centerPosition);
             Vector3 averagePosition = AverageVector3(isDebug);
 
             if (_bodyTransform != null)

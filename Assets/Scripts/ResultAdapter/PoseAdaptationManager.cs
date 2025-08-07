@@ -113,6 +113,11 @@ namespace Mediapipe.Allocator
 
             _headPacket = new(_landmarks, new int[4] { 7, 8, 11, 12 });
             _headAdapter = new(FindChildByName("Head"), _headPacket, Sleeve);
+
+            if(_operationDimension == OperationDimension.TwoDimension)
+            {
+                TrackingAdapterBase.ValidCacheSize = TrackingAdapterBase.ValidCacheSize * 3;
+            }
         }
 
         public override void ApplyMediapipeResult(PoseLandmarkerResult recognitionResult)
@@ -127,15 +132,22 @@ namespace Mediapipe.Allocator
                 return;
             }
 
-            _bodyPositionAdapter.ForwardApply();
+            // Chest and Head
 
             _hipAdapter.ForwardApply();
             _chestAdapter.ForwardApply(_hipAdapter.PoseMatrix);
+
+            _headAdapter.ForwardApply(parentQuaternion: _hipAdapter.LatestQuaternion * _chestAdapter.LatestQuaternion);
+
+            // Arm
+
             _leftUpperArmAdapter.ForwardApply();
             _leftLowerArmAdapter.ForwardApply();
 
             _rightUpperArmAdapter.ForwardApply();
             _rightLowerArmAdapter.ForwardApply();
+
+            // Leg
 
             _leftUpperLegAdapter.ForwardApply(parentQuaternion: _hipAdapter.LatestQuaternion);
             _leftLowerLegAdapter.ForwardApply();
@@ -147,10 +159,15 @@ namespace Mediapipe.Allocator
 
             _rightFootAdapter.ForwardApply();
 
-            _headAdapter.ForwardApply(parentQuaternion : _hipAdapter.LatestQuaternion * _chestAdapter.LatestQuaternion);
+            // Entire Body
 
             _bodyColliderAdapter.ForwardApply();
-            _bodyColliderAdapter.UpdateColliderHeight(FetchPositionOfLowerObject(_bodyColliderAdapter.LowestIndex));
+            Vector3 positionOfLowerObject = FetchPositionOfLowerObject(_bodyColliderAdapter.LowestIndex);
+            _bodyColliderAdapter.UpdateColliderHeight(positionOfLowerObject);
+
+            _bodyPositionAdapter.RegisterHeight(positionOfLowerObject);
+            _bodyPositionAdapter.ForwardApply();
+
         }
 
         private Vector3 FetchPositionOfLowerObject(int lowerObjectID)

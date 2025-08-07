@@ -56,6 +56,8 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
+            if (_bodyCollider == null) return;
+
             bool willPass = false;
             if (!LandmarkVisibility(1) && !LandmarkVisibility(2) /* Both hips are not visible */ ) willPass = true;
 
@@ -85,14 +87,19 @@ namespace Mediapipe.Allocator
 
         public void UpdateColliderHeight(Vector3 lowestPosition)
         {
-            if(lowestPosition.y == float.NegativeInfinity)
+            if (_bodyCollider == null) return;
+
+            if (lowestPosition.y == float.NegativeInfinity)
             {
                 _bodyCollider.height = _modelHeight;
                 return;
             }
 
-            _bodyCollider.height = _modelHeight - lowestPosition.y;
-            GameLogger.Log(lowestPosition.y, _bodyCollider.height);
+            _height = _modelHeight - lowestPosition.y;
+
+            if(_height > _modelHeight) _height = _modelHeight;
+
+            _bodyCollider.height = _height;
         }
 
         protected void ApplyRotation(float f, bool isDebug = false)
