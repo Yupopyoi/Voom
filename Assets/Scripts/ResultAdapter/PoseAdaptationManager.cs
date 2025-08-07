@@ -116,7 +116,8 @@ namespace Mediapipe.Allocator
 
             if(_operationDimension == OperationDimension.TwoDimension)
             {
-                TrackingAdapterBase.ValidCacheSize = TrackingAdapterBase.ValidCacheSize * 3;
+                TrackingAdapterBase.ValidCacheSize = 50;
+                TrackingAdapterBase.Dimension = _operationDimension;
             }
         }
 
@@ -149,23 +150,23 @@ namespace Mediapipe.Allocator
 
             // Leg
 
-            _leftUpperLegAdapter.ForwardApply(parentQuaternion: _hipAdapter.LatestQuaternion);
+            _leftUpperLegAdapter.ForwardApply(parentMatrix: _hipAdapter.PoseMatrix, parentQuaternion: _hipAdapter.LatestQuaternion);
             _leftLowerLegAdapter.ForwardApply();
 
             _leftFootAdapter.ForwardApply();
 
-            _rightUpperLegAdapter.ForwardApply(parentQuaternion: _hipAdapter.LatestQuaternion);
+            _rightUpperLegAdapter.ForwardApply(parentMatrix: _hipAdapter.PoseMatrix, parentQuaternion: _hipAdapter.LatestQuaternion);
             _rightLowerLegAdapter.ForwardApply();
 
             _rightFootAdapter.ForwardApply();
 
             // Entire Body
 
-            _bodyColliderAdapter.ForwardApply();
-            Vector3 positionOfLowerObject = FetchPositionOfLowerObject(_bodyColliderAdapter.LowestIndex);
-            _bodyColliderAdapter.UpdateColliderHeight(positionOfLowerObject);
+            //_bodyColliderAdapter.ForwardApply();
+            //Vector3 positionOfLowerObject = FetchPositionOfLowerObject(_bodyColliderAdapter.LowestIndex);
+            //_bodyColliderAdapter.UpdateColliderHeight(positionOfLowerObject);
 
-            _bodyPositionAdapter.RegisterHeight(positionOfLowerObject);
+            //_bodyPositionAdapter.RegisterHeight(FetchPositionOfLowerObject(_bodyColliderAdapter.LowestIndex));
             _bodyPositionAdapter.ForwardApply();
 
         }

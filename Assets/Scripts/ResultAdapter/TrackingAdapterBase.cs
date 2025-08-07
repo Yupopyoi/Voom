@@ -66,6 +66,14 @@ namespace Mediapipe.Allocator
                 return Quaternion.LookRotation(forward, up);
             }
         }
+
+        public override string ToString()
+        {
+            return $"R : {Right.x:F2} , {Right.y:F2}, {Right.z:F2} \n" +
+                   $"U : {Up.x:F2} , {Up.y:F2}, {Up.z:F2} \n" +
+                   $"F : {Forward.x:F2} , {Forward.y:F2}, {Forward.z:F2} \n" +
+                   $"P : {Position.x:F2} , {Position.y:F2}, {Position.z:F2} \n";
+        }
     }
 
     interface IPoseAdapter
@@ -77,10 +85,11 @@ namespace Mediapipe.Allocator
     // This class provides the functions and declarations necessary for the operation of the various parts of the body.
     // ForwardApply is an abstract method and MUST be implemented in all subclasses.
     // For more details, see https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
-    public abstract class TrackingAdapterBase : MonoBehaviour, IPoseAdapter
+    public abstract class TrackingAdapterBase :IPoseAdapter
     {
         private readonly GameObject _partObject;
         private static Sleeve _sleeve;
+        private static OperationDimension _operationDimension = OperationDimension.ThreeDimension;
 
         private Vector3 _initTransform;
         private LandmarksPacket _landmarksPacket;
@@ -108,6 +117,12 @@ namespace Mediapipe.Allocator
                 else if (value < 1) _validCacheSize = 1;
                 else _validCacheSize = value;
             }
+        }
+
+        public static OperationDimension Dimension
+        {
+            get { return _operationDimension; }
+            set { _operationDimension = value; }
         }
 
         protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
@@ -143,11 +158,13 @@ namespace Mediapipe.Allocator
         /// </summary>
         protected Vector3 Landmark(int index)
         {
+            float ratio = _operationDimension == OperationDimension.ThreeDimension ? 1.0f : 0.6f;
+
             if (index < _landmarksPacket.Capacity)
             {
-                float x = _landmarksPacket.GetLandmark(index).x;
-                float y = _landmarksPacket.GetLandmark(index).y;
-                float z = _landmarksPacket.GetLandmark(index).z;
+                float x = _landmarksPacket.GetLandmark(index).x * ratio;
+                float y = _landmarksPacket.GetLandmark(index).y * ratio;
+                float z = _landmarksPacket.GetLandmark(index).z * ratio;
 
                 return new Vector3(x, y, z);
             }

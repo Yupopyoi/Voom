@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Yupopyoi
+﻿// Copyright (c) 2025 Yupopyoi
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -12,8 +12,6 @@ namespace Mediapipe.Allocator
     public class LowerLegAdapter : TrackingAdapterBase
     {
         protected readonly bool _isLeft;
-
-        private readonly float _straightThreshold = 0.5f;
 
         public LowerLegAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool isLeft)
             : base(partObject, landmarksPacket, sleeve)
@@ -51,11 +49,24 @@ namespace Mediapipe.Allocator
             Vector3 upperLeg = (knee - hip).normalized;
             Vector3 lowerLeg = (ankle - knee).normalized;
 
-            float absDot = Mathf.Abs(Vector2.Dot(upperLeg, lowerLeg));
+            Vector3 rotationEulerAngles = new(DotToEulerX(Vector2.Dot(upperLeg, lowerLeg)), 0.0f, 0.0f); 
+
+            ApplyRotation(PreventUnwantedRotation(Quaternion.Euler(rotationEulerAngles)));
+        }
+
+        public static float DotToEulerX(float dot, float t = 0.5f)
+        {
+            float maxRotation = 140.0f;
 
             /*
-             *   |  absDot |  Rotation Euler X |
+             *   |   dot   |  Rotation Euler X |
              *   |:-------:|:-----------------:|
+             *   |  -1.0   |     maxRotation   |
+             *   |    :    |         :         |
+             *   |   -t    |     maxRotation   | (t is 0.5 by default.)
+             *   |    :    |         :         |
+             *   |    :    |       Lerp        |
+             *   |    :    |         :         |
              *   |   0.0   |        90         |
              *   |    :    |         :         |
              *   |    :    |       Lerp        |
@@ -65,15 +76,24 @@ namespace Mediapipe.Allocator
              *   |   1.0   |         0         |
              */
 
-            float rotationEulerX = 0.0f;
-            if(absDot < _straightThreshold)
+            if (dot <= -t)
             {
-                rotationEulerX = 90.0f - (absDot / _straightThreshold) * 90.0f;
+                return maxRotation;
             }
-
-            Vector3 rotationEulerAngles = new(rotationEulerX, 0.0f, 0.0f); 
-
-            ApplyRotation(PreventUnwantedRotation(Quaternion.Euler(rotationEulerAngles)));
+            else if (dot < 0.0f)
+            {
+                float interp = Mathf.InverseLerp(-t, 0.0f, dot);
+                return Mathf.Lerp(maxRotation, 90f, interp);
+            }
+            else if (dot < t)
+            {
+                float interp = Mathf.InverseLerp(0.0f, t, dot);
+                return Mathf.Lerp(90.0f, 0.0f, interp);
+            }
+            else
+            {
+                return 0.0f;
+            }
         }
     }
 }// namespace Mediapipe.Allocator

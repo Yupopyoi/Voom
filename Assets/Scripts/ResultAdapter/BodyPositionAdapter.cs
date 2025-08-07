@@ -18,12 +18,13 @@ namespace Mediapipe.Allocator
         // In this class, the collider configuration will not be changed.
         // For changing the configuration, refer to BodyColliderAdapter.
 
-        private Transform _bodyTransform;
+        private readonly Transform _bodyTransform;
         private float _maximumAmountOfMovementInGameView = 1.0f;
         private bool _isFliped = true;
 
         private readonly Queue<Vector3> _vecterCache;
 
+        private float _legUpThreshold = 0.1f;
         private Vector3 _centerPosition;
 
         public BodyPositionAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
@@ -52,6 +53,12 @@ namespace Mediapipe.Allocator
                 return;
             }
 
+            if(lowerPosition.y < 0.0f)
+            {
+                _centerPosition.y = lowerPosition.y * -1.0f * 2.0f;
+                return;
+            }
+
             _centerPosition.y = lowerPosition.y;
         }
 
@@ -59,6 +66,16 @@ namespace Mediapipe.Allocator
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             if (!LandmarkVisibility(0) && !LandmarkVisibility(1) /* Both knees are not visible */ ) return;
+
+            if(Landmark(0).y > Landmark(1).y + _legUpThreshold /* Up Right leg */)
+            {
+                return; // No Change
+            }
+
+            if (Landmark(1).y > Landmark(0).y + _legUpThreshold /* Up Left leg */)
+            {
+                return; // No Change
+            }
 
             var centerPos = (Landmark(0) + Landmark(1)) * 0.5f; // Range : [0,1]
 

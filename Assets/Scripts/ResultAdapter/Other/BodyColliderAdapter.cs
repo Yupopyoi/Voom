@@ -101,58 +101,6 @@ namespace Mediapipe.Allocator
 
             _bodyCollider.height = _height;
         }
-
-        protected void ApplyRotation(float f, bool isDebug = false)
-        {
-            AddVector3Cache(f);
-            float averagePosition = AverageVector3(isDebug);
-
-            if (_bodyCollider != null)
-            {
-                /*
-                var rootPos = _bodyTransform.position;
-                rootPos.x = averagePosition.x * _maximumAmountOfMovementInGameView * flip;
-                _bodyTransform.position = rootPos;
-                */
-            }
-        }
-
-        private void AddVector3Cache(float f)
-        {
-            if (_heightCache.Count >= CACHE_SIZE)
-            {
-                _heightCache.Dequeue();
-            }
-
-            _heightCache.Enqueue(f);
-        }
-
-        private float AverageVector3(bool isDebug = false)
-        {
-            if (_heightCache.Count == 0)
-            {
-                return _modelHeight;
-            }
-
-           float sum = 0.0f;
-
-            int n = 1;
-            foreach (var value in _heightCache)
-            {
-                if (n++ < CACHE_SIZE - ValidCacheSize) continue;
-
-                sum += value;
-            }
-
-            float averageHeight = sum / ValidCacheSize;
-
-            if (isDebug)
-            {
-                GameLogger.Log(averageHeight, 2);
-            }
-
-            return averageHeight;
-        }
     }
 }// namespace Mediapipe.Allocator
 

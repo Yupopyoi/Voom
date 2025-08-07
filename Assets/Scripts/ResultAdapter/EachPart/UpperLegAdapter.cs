@@ -74,13 +74,10 @@ namespace Mediapipe.Allocator
             // Construct pose matrix with the basis vectors and position at the hip
             _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, (_hip + _oppositeHip) * 0.5f /* Center of hips */);
 
-            // Get the world-space rotation from the pose matrix
-            Quaternion worldRotation = ToSmoothStair(_poseMatrix.RotationLHS);
-
             // Cancel parent's (= hips') rotation to get local rotation
             Quaternion localRotation = parentQuaternion.HasValue
-                ? Quaternion.Inverse(_torsoQuaternion) * worldRotation
-                : worldRotation;
+                ? Quaternion.Inverse(_torsoQuaternion) * _poseMatrix.RotationLHS
+                : _poseMatrix.RotationLHS;
 
             ApplyRotation(PreventUnwantedRotation(localRotation));
         }

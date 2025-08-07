@@ -9,14 +9,13 @@ public class MenuDisplayer : MonoBehaviour
 
     private float _contractionRatio; // Reduction rate from 4K image quality
 
-    private List<RectTransform> _menuItems = new();
+    private readonly List<RectTransform> _menuItems = new();
 
     [Header("General")]
     [SerializeField] private Canvas _menuCanvas;
     [SerializeField, Range(1f, 1000f)] private float _dragJudgmentThreshold = 100f; // [pixels]
 
     [Header("Deployment")]
-    [SerializeField] private float _verticalOffset = 150f; // No Use now
     [SerializeField] private float _spacing = 250f;
     [SerializeField] private float _animationTime = 0.05f;
     [SerializeField] private float _delayBetweenItems = 0.01f;

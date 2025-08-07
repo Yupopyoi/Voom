@@ -43,7 +43,6 @@ namespace Mediapipe.Allocator
 
             _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, shoulder);
 
-            // For the upper arm, it moves more naturally if you leave it linear without using ToSmoothStair.
             ApplyRotation(PreventUnwantedRotation(_poseMatrix.RotationLHS));
         }
     }

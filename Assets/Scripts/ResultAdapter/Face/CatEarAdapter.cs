@@ -19,7 +19,7 @@ namespace Mediapipe.Allocator
         public bool _canMoveResponseToExpression = true;
 
         // Amount of ear growth when looking surprised (Greater than 1)
-        public float _growthAmount = 1.05f;
+        public float _growthAmount = 1.10f;
 
         #endregion
 

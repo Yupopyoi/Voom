@@ -69,7 +69,7 @@ namespace Mediapipe.Allocator
 
             // Mixing the straight state and the curved state detected by Mediapipe using Slerp.
             Quaternion finalRotation 
-                = Quaternion.Slerp(_poseMatrix.RotationLHS, NeutralMatrix().RotationLHS, ToSmoothStair(dot, 1.0f, 4));
+                = Quaternion.Slerp(_poseMatrix.RotationLHS, NeutralMatrix().RotationLHS, dot);
 
             ApplyRotation(PreventUnwantedRotation(finalRotation));
         }

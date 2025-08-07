@@ -94,9 +94,9 @@ public static class GameLogger
         Vector2Log(logv, digits);
     }
 
-    public static void Log(Vector3 logv, int digits = 2)
+    public static void Log(Vector3 logv, int digits = 2, string prefix = "")
     {
-        Vector3Log(logv, digits);
+        Vector3Log(logv, digits, prefix);
     }
 
     public static void Log(Vector3 logv1, Vector3 logv2)
