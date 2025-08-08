@@ -51,24 +51,12 @@ namespace Mediapipe.Allocator
             }
         }
 
-        protected void LandmarkLog(int index) /* For Debug */
-        {
-            if (index < _landmarksPacket.Capacity)
-            {
-                Debug.Log(_landmarksPacket.GetLandmark(index).ToString());
-            }
-            else
-            {
-                Debug.Log($"The index exceeds the bounds of the List. | index : {index}");
-            }
-        }
-
-        protected float PlaneDistance(Vector3 diffVector)
+        protected static float PlaneDistance(Vector3 diffVector)
         {
             return (diffVector.x * diffVector.x + diffVector.y * diffVector.y) * 1000.0f;
         }
 
-        protected float BindControlValue(float source /* [0 - 1] */, float scale = 1.0f, float maxValue = 100.0f)
+        protected static float BindControlValue(float source /* [0 - 1] */, float scale = 1.0f, float maxValue = 100.0f)
         {
             source *= scale;
             source = Mathf.Clamp01(source);
@@ -76,7 +64,7 @@ namespace Mediapipe.Allocator
             return source * maxValue;
         }
 
-        protected float Sigmoid(float x, float a, float b, float k = 0.1f) /* x = [ a , b ] */
+        protected static float Sigmoid(float x, float a, float b, float k = 0.1f) /* x = [ a , b ] */
         {
             float c = (b + a) * 0.5f;
             if(k == default)
@@ -88,12 +76,12 @@ namespace Mediapipe.Allocator
             return 100.0f / (1.0f + Mathf.Exp(exp));
         }
 
-        protected float Sigmoid(float x, float k = 0.1f) /* x = [ 0 , 100 ] */
+        protected static float Sigmoid(float x, float k = 0.1f) /* x = [ 0 , 100 ] */
         {
             return Sigmoid(x, 0.0f, 100.0f, k);
         }
 
-        protected bool IsEmptyGameObject(GameObject obj)
+        protected static bool IsEmptyGameObject(GameObject obj)
         {
             if(obj == null) return true;
 

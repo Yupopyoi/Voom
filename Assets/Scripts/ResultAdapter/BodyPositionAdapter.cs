@@ -27,8 +27,8 @@ namespace Mediapipe.Allocator
         private float _legUpThreshold = 0.1f;
         private Vector3 _centerPosition;
 
-        public BodyPositionAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
-               : base(partObject, landmarksPacket, sleeve)
+        public BodyPositionAdapter(GameObject partObject, LandmarksPacket landmarksPacket)
+               : base(partObject, landmarksPacket)
         { 
             _bodyTransform = partObject.transform; /* Root */
 
@@ -65,16 +65,18 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
+            if (!Is3D()) return; // Only execute for full body tracking.
+
             if (!LandmarkVisibility(0) && !LandmarkVisibility(1) /* Both knees are not visible */ ) return;
 
             if(Landmark(0).y > Landmark(1).y + _legUpThreshold /* Up Right leg */)
             {
-                return; // No Change
+                return; // Nothing to do
             }
 
             if (Landmark(1).y > Landmark(0).y + _legUpThreshold /* Up Left leg */)
             {
-                return; // No Change
+                return; // Nothing to do
             }
 
             var centerPos = (Landmark(0) + Landmark(1)) * 0.5f; // Range : [0,1]

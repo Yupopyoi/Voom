@@ -21,24 +21,19 @@ namespace Mediapipe.Allocator
         private CapsuleCollider _bodyCollider;
         private readonly float _modelHeight;
 
-        private readonly Queue<float> _heightCache;
-
         private int _lowestIndex;
         private float _height;
 
         private bool _isJumping; //ToDo
 
-
         public int LowestIndex => _lowestIndex;
 
-        public BodyColliderAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
-               : base(partObject, landmarksPacket, sleeve)
+        public BodyColliderAdapter(GameObject partObject, LandmarksPacket landmarksPacket)
+               : base(partObject, landmarksPacket)
         {
             _bodyCollider = partObject.GetComponent<CapsuleCollider>();
 
             if(_bodyCollider != null) _modelHeight = _bodyCollider.height;
-
-            _heightCache = new(capacity: CACHE_SIZE);
         }
 
         /*  [Landmark Index]

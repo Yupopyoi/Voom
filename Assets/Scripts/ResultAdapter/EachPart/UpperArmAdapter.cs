@@ -5,14 +5,13 @@
 // https://opensource.org/licenses/MIT.
 
 using UnityEngine;
-using VRMController;
 
 namespace Mediapipe.Allocator
 {
     public class UpperArmAdapter : ArmAdapterBase
     {
-        public UpperArmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool isLeft)
-            : base(partObject, landmarksPacket, sleeve, isLeft){}
+        public UpperArmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, bool isLeft)
+            : base(partObject, landmarksPacket, isLeft){}
 
          /*  [Landmark Index]
          * 
@@ -28,6 +27,14 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
+            if (!LandmarkVisibility(1))/* The elbow is not visible */
+            {
+                Quaternion naturalQuaternion = Quaternion.Euler(new Vector3(0.0f, 0.0f, 65.0f * RightMinus));
+
+                ApplyRotation(naturalQuaternion);
+                return;
+            }
+
             Vector3 shoulder = Landmark(0); // Point: shoulder
             Vector3 elbow = Landmark(1);    // Point: elbow
 
@@ -44,6 +51,34 @@ namespace Mediapipe.Allocator
             _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, shoulder);
 
             ApplyRotation(PreventUnwantedRotation(_poseMatrix.RotationLHS));
+        }
+
+        protected override Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS, bool isDebug = false)
+        {
+            var stableEulerAngles = smoothedRotationLHS.eulerAngles;
+
+            stableEulerAngles.z -= 10 * RightMinus;
+            //stableEulerAngles.y += 5.0f;
+
+            if (stableEulerAngles.x > 270)
+            {
+                stableEulerAngles.x = 0.0f;
+            }
+            if (stableEulerAngles.y > 180)
+            {
+                stableEulerAngles.y -= 360.0f;
+            }
+            if (stableEulerAngles.z > 180)
+            {
+                stableEulerAngles.z -= 360.0f;
+            }
+
+            stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, -90.0f, 90.0f);
+            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -90.0f, 80.0f);
+
+            if (isDebug) GameLogger.Log(stableEulerAngles);
+
+            return Quaternion.Euler(stableEulerAngles);
         }
     }
 }// namespace Mediapipe.Allocator

@@ -73,11 +73,18 @@ namespace Mediapipe.Allocator
             var vrmInstance = _vrmObject.GetComponent<Vrm10Instance>();
             vrmInstance.UpdateType = Vrm10Instance.UpdateTypes.None;
 
-            GenerateLandmarksList(21 * 2); // (21 Landmarks) x (Left/Right Hands) , 0-20 : Left, 21-41 : Right 
+            GenerateLandmarksList(21 * 2); // (21 Landmarks) x (Left/Right Hands) , 0-20 : Left, 21-41 : Right      
+        }
 
+        public void AllocatePacketAndAdapter()
+        {
             // Definition of "Adapters" that apply the result of MediaPipe to each part
             // and "Packets" that convey information to Adapter.
-            
+
+            if (_operationDimension == OperationDimension.TwoDimension)
+            {
+                TrackingAdapterBase.Dimension = _operationDimension;
+            }
         }
 
         public override void ApplyMediapipeResult(HandLandmarkerResult recognitionResult)

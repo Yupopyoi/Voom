@@ -1,12 +1,11 @@
 using UnityEngine;
-using VRMController;
 
 namespace Mediapipe.Allocator
 {
     public class LeftPalmAdapter : TrackingAdapterBase
     {
-        public LeftPalmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
-                        : base(partObject, landmarksPacket, sleeve) { }
+        public LeftPalmAdapter(GameObject partObject, LandmarksPacket landmarksPacket)
+                        : base(partObject, landmarksPacket) { }
 
         /*  [Landmark Index]
          * 

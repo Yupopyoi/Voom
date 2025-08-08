@@ -1048,7 +1048,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _menuCanvas: {fileID: 2043341589}
   _dragJudgmentThreshold: 200
-  _verticalOffset: 150
   _spacing: 250
   _animationTime: 0.05
   _delayBetweenItems: 0.01
@@ -1927,7 +1926,7 @@ PrefabInstance:
       objectReference: {fileID: 657812505}
     - target: {fileID: 5512522161097604203, guid: 3be0660f863afd54e97ff2204b0c499f, type: 3}
       propertyPath: _initialIndex
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5512522161097604203, guid: 3be0660f863afd54e97ff2204b0c499f, type: 3}
       propertyPath: _setInitialIndex

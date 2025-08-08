@@ -82,14 +82,17 @@ namespace Mediapipe.Allocator
         void ReverseApply(INamedVector childMessage);
     }
 
-    // This class provides the functions and declarations necessary for the operation of the various parts of the body.
-    // ForwardApply is an abstract method and MUST be implemented in all subclasses.
-    // For more details, see https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
+    /// <summary>
+    /// This class provides the functions and declarations necessary for the operation of the various parts of the body.
+    /// ForwardApply is an abstract method and MUST be implemented in all subclasses.
+    /// For more details, see https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
+    /// </summary>
     public abstract class TrackingAdapterBase :IPoseAdapter
     {
         private readonly GameObject _partObject;
-        private static Sleeve _sleeve;
+        private static Sleeve _sleeve; // Reservation
         private static OperationDimension _operationDimension = OperationDimension.ThreeDimension;
+        private static bool _isUsingMocopi = false; // Reservation
 
         private Vector3 _initTransform;
         private LandmarksPacket _landmarksPacket;
@@ -108,6 +111,10 @@ namespace Mediapipe.Allocator
 
         public Vector3 PartObjectPosition => _partObject.transform.position;
 
+        public Quaternion PartObjectWorldRotation => _partObject.transform.rotation;
+
+        public Quaternion PartObjecLocalRotation => _partObject.transform.localRotation;
+
         public static int ValidCacheSize
         { 
             get { return _validCacheSize; }
@@ -125,7 +132,7 @@ namespace Mediapipe.Allocator
             set { _operationDimension = value; }
         }
 
-        protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
+        protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket)
         {
             _partObject = partObject;
 
@@ -136,8 +143,6 @@ namespace Mediapipe.Allocator
             _landmarksPacket = landmarksPacket;
 
             _quaternionCache = new(capacity: CACHE_SIZE);
-
-            _sleeve = sleeve;
 
             _latestQuaternion = _partObject.transform.rotation;
         }
@@ -176,6 +181,12 @@ namespace Mediapipe.Allocator
             }
         }
 
+        /// <summary>
+        /// Returns whether the landmark is visible.
+        /// Returns true when the value (visibility) is higher than the threshold.
+        /// The threshold is a value between 0 and 1, but in most cases, you will probably set a value between 0.7 and 0.9.
+        /// If the landmark does not exist, false is returned.
+        /// </summary>
         protected bool LandmarkVisibility(int index, float threshold = 0.9f)
         {
             if (index < _landmarksPacket.Capacity)
@@ -250,12 +261,22 @@ namespace Mediapipe.Allocator
             return smoothedRotationLHS; 
         }
 
+        /// <summary>
+        /// This function is dangerous because it ignores all calclations and sets the quaternion value directly.
+        /// This function should basically only be used for debugging.
+        /// </summary>
+        /// <param name="q">Quaternion value</param>
+        public void SetWorldRotationDirectly(Quaternion q)
+        {
+            _partObject.transform.rotation = q;
+        }
+
         #region Static Utils
 
         /// <summary>
         /// Hyperbolic tangent
         /// </summary>
-        /// <param name="x"></param>
+        /// <param name="x">x</param>
         /// <returns>tanh(x)</returns>
         protected static float Tanh(float x)
         {
@@ -275,20 +296,25 @@ namespace Mediapipe.Allocator
         /// <param name="range">The value at which input and output are equal.(convergence value)</param>
         /// <param name="k">The larger this is, the closer the function is to a step function.</param>
         /// <param name="wide">Change the value at which the rate of change is greatest.</param>
-        /// <returns></returns>
+        /// <returns>Smoothed float</returns>
         protected static float ToSmoothStair(float value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
         {
             float mid = range * 0.5f;
             return mid * (Tanh(k * (value + mid * wide)) + Tanh(k * (value - mid * wide)));
         }
 
-        protected static Vector3 ToSmoothStair(Vector3 value, float range = 90.0f, float k = 0.04f, float wide = 1.0f)
-        {
-            return new Vector3(ToSmoothStair(value.x, range, k, wide),
-                               ToSmoothStair(value.y, range, k, wide),
-                               ToSmoothStair(value.z, range, k, wide));
-        }
-
+        /// <summary>
+        /// This function returns a smooth staircase function around zero.
+        /// It looks like two sigmoid functions connected together.
+        /// This makes the model more stable and enables smooth movement.
+        /// If you want to check the shape of the graph, try entering this equation into GeoGebra.
+        /// f(x)=(a/2)*(tanh(k(x+(a/2)))+tanh(k(x-(a/2))))
+        /// </summary>
+        /// <param name="value">x of f(x)</param>
+        /// <param name="range">The value at which input and output are equal.(convergence value)</param>
+        /// <param name="k">The larger this is, the closer the function is to a step function.</param>
+        /// <param name="wide">Change the value at which the rate of change is greatest.</param>
+        /// <returns>Smoothed Quaternion</returns>
         protected static Quaternion ToSmoothStair(Quaternion value, float range = 1.0f, float k = 4.0f, float wide = 1.0f)
         {
             return new Quaternion(ToSmoothStair(value.x, range, k, wide),
@@ -297,18 +323,10 @@ namespace Mediapipe.Allocator
                                   ToSmoothStair(value.w, range, k, wide));
         }
 
-        public static float ThresholdLerp(float x, float a, float max = 1.0f)
-        {
-            if (x < a) return 0.0f;
-            return (x - a) / (max - a);
-        }
-
-        public static float ThresholdQuadratic(float x, float a, float max = 1.0f)
-        {
-            float t = ThresholdLerp(x, a, max);
-            return t * t;
-        }
-
+        /// <summary>
+        /// Returns the PoseMatrix in its natural state. <br />
+        /// </summary>
+        /// <returns>[-1,  0,  0,  0] <br />[ 0,  1,  0,  0] <br />[ 0,  0, -1,  0] <br />[ 0,  0,  0,  1]</returns>
         protected static PoseMatrix NeutralMatrix()
         {
             return PoseMatrix.SetBasisAndPosition(new Vector3(-1.0f, 0.0f, 0.0f),
@@ -317,11 +335,30 @@ namespace Mediapipe.Allocator
                                                   new Vector3(0.0f, 0.0f, 0.0f));
         }
 
+
+        /// <summary>
+        /// Returns whether it is in 3D mode.
+        /// </summary>
+        /// <returns></returns>
+        protected static bool Is3D()
+        {
+            if (_operationDimension == OperationDimension.ThreeDimension)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         #endregion
 
         #region Functions for calculating the amount of rotation
 
-        // Call this function to apply the rotation angle.
+        /// <summary>
+        /// Call this function to apply the rotation angle.
+        /// </summary>
+        /// <param name="q"></param>
+        /// <param name="isDebug"></param>
         protected void ApplyRotation(Quaternion q, bool isDebug = false)
         {
             AddQuaternionCache(q);
@@ -410,11 +447,24 @@ namespace Mediapipe.Allocator
 
     public static class QuaternionExtensions
     {
+        /// <summary>
+        /// Return the quaternion with all elements multiplied by -1.<br />
+        /// return new Quaternion(-q.x, -q.y, -q.z, -q.w);
+        /// </summary>
+        /// <param name="q"></param>
+        /// <returns></returns>
         public static Quaternion Negate(this Quaternion q)
         {
             return new Quaternion(-q.x, -q.y, -q.z, -q.w);
         }
 
+        /// <summary>
+        /// Returns a quaternion multiplied by the float argument for all elements.
+        /// return new Quaternion(q.x * a, q.y * a, q.z * a, q.w * a
+        /// </summary>
+        /// <param name="q"></param>
+        /// <param name="a"></param>
+        /// <returns></returns>
         public static Quaternion Mul(this Quaternion q, float a)
         {
             return new Quaternion(q.x * a, q.y * a, q.z * a, q.w * a);

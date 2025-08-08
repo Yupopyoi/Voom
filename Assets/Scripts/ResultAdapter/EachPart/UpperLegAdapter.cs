@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 using UnityEngine;
-using VRMController;
 
 namespace Mediapipe.Allocator
 {
@@ -16,8 +15,8 @@ namespace Mediapipe.Allocator
 
         protected bool _isSittingDown = false;
 
-        public UpperLegAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool isLeft)
-            : base(partObject, landmarksPacket, sleeve)
+        public UpperLegAdapter(GameObject partObject, LandmarksPacket landmarksPacket, bool isLeft)
+            : base(partObject, landmarksPacket)
         {
             _isLeft = isLeft;
             RightMinus = isLeft ? 1.0f : -1.0f;
@@ -45,6 +44,8 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
+            if (!Is3D()) return; // Only execute for full body tracking.
+
             if (!LandmarkVisibility(2) && !LandmarkVisibility(3) /* Both hips are not visible */)
             {
                 _poseMatrix = NeutralMatrix();

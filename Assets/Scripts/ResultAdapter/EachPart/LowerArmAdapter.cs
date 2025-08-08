@@ -5,14 +5,13 @@
 // https://opensource.org/licenses/MIT.
 
 using UnityEngine;
-using VRMController;
 
 namespace Mediapipe.Allocator
 {
     public class LowerArmAdapter : ArmAdapterBase
     {
-        public LowerArmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool isLeft)
-                : base(partObject, landmarksPacket, sleeve, isLeft) { }
+        public LowerArmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, bool isLeft)
+                : base(partObject, landmarksPacket, isLeft) { }
 
         /*  [Landmark Index]
          * 
@@ -26,7 +25,7 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
-            if (!LandmarkVisibility(3) /* The wrist is outside the screen */)
+            if (!LandmarkVisibility(1) || !LandmarkVisibility(3) /* The wrist is outside the screen */)
             {
                 // As a result of extending the arm, the wrist is considered to be outside the screen,
                 // so the model's arm is fixed straight.
@@ -81,6 +80,8 @@ namespace Mediapipe.Allocator
             if (stableEulerAngles.x > 180.0f) stableEulerAngles.x -= 360.0f;
             if (stableEulerAngles.y > 180.0f) stableEulerAngles.y -= 360.0f;
             if (stableEulerAngles.z > 180.0f) stableEulerAngles.z -= 360.0f;
+
+            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, 8.0f, 180.0f);
 
             if (isDebug) GameLogger.Log(stableEulerAngles);
 

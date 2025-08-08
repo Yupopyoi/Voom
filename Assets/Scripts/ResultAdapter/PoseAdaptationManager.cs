@@ -24,7 +24,6 @@ namespace Mediapipe.Allocator
         LandmarksPacket _colliderPacket;
         BodyColliderAdapter _bodyColliderAdapter;
 
-
         // Torso
         LandmarksPacket _hipPacket;
         HipAdapter _hipAdapter;
@@ -59,8 +58,6 @@ namespace Mediapipe.Allocator
         LandmarksPacket _rightFootPacket;
         FootAdapter _rightFootAdapter;
 
-        Sleeve sleeve;
-
         public PalmVectors PalmVectors{ private get; set; }
 
         public Sleeve Sleeve{ private get; set; }
@@ -73,52 +70,55 @@ namespace Mediapipe.Allocator
             vrmInstance.UpdateType = Vrm10Instance.UpdateTypes.None;
 
             GenerateLandmarksList(33);
+        }
+
+        public void AllocatePacketAndAdapter()
+        {
+            if (_operationDimension == OperationDimension.TwoDimension)
+            {
+                TrackingAdapterBase.ValidCacheSize = 50;
+                TrackingAdapterBase.Dimension = _operationDimension;
+            }
 
             // Definition of "Adapters" that apply the result of MediaPipe to each part
             // and "Packets" that convey information to Adapter.]
             // For more details, see https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
             _entireBodyPacket = new(_landmarks, new int[2] { 25, 26 });
-            _bodyPositionAdapter = new(FindChildByName("Root"), _entireBodyPacket, Sleeve);
+            _bodyPositionAdapter = new(FindChildByName("Root"), _entireBodyPacket);
 
             _colliderPacket = new(_landmarks, new int[7] { 11, 23, 24, 25, 26, 27, 28 });
-            _bodyColliderAdapter = new(FindChildByName("Body"), _colliderPacket, Sleeve);
+            _bodyColliderAdapter = new(FindChildByName("Body"), _colliderPacket);
 
             _hipPacket = new(_landmarks, new int[4] { 23, 24, 11, 12 });
-            _hipAdapter = new(FindChildByName("Hip"), _hipPacket, Sleeve);
+            _hipAdapter = new(FindChildByName("Hip"), _hipPacket);
 
-            _chestPacket = new(_landmarks, new int[4] { 11, 12, 23, 24});
-            _chestAdapter = new(FindChildByName("Chest"), _chestPacket, Sleeve);
+            _chestPacket = new(_landmarks, new int[5] { 11, 12, 23, 24, 0 });
+            _chestAdapter = new(FindChildByName("Chest"), _chestPacket);
 
             _leftArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });
-            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftArmPacket, Sleeve, isLeft: true);
-            _leftLowerArmAdapter = new(FindChildByName("L_LowerArm"), _leftArmPacket, Sleeve, isLeft: true);
+            _leftUpperArmAdapter = new(FindChildByName("L_UpperArm"), _leftArmPacket, isLeft: true);
+            _leftLowerArmAdapter = new(FindChildByName("L_LowerArm"), _leftArmPacket, isLeft: true);
 
             _rightArmPacket = new(_landmarks, new int[6] { 12, 14, 11, 16, 24, 23 });
-            _rightUpperArmAdapter = new(FindChildByName("R_UpperArm"), _rightArmPacket, Sleeve, isLeft: false);
-            _rightLowerArmAdapter = new(FindChildByName("R_LowerArm"), _rightArmPacket, Sleeve, isLeft: false);
+            _rightUpperArmAdapter = new(FindChildByName("R_UpperArm"), _rightArmPacket, isLeft: false);
+            _rightLowerArmAdapter = new(FindChildByName("R_LowerArm"), _rightArmPacket, isLeft: false);
 
             _leftLegPacket = new(_landmarks, new int[7] { 11, 12, 23, 24, 25, 27, 28 });
-            _leftUpperLegAdapter = new(FindChildByName("L_UpperLeg"), _leftLegPacket, Sleeve, isLeft: true);
-            _leftLowerLegAdapter = new(FindChildByName("L_LowerLeg"), _leftLegPacket, Sleeve, isLeft: true);
+            _leftUpperLegAdapter = new(FindChildByName("L_UpperLeg"), _leftLegPacket, isLeft: true);
+            _leftLowerLegAdapter = new(FindChildByName("L_LowerLeg"), _leftLegPacket, isLeft: true);
 
             _leftFootPacket = new(_landmarks, new int[4] { 25, 27, 29, 31 });
-            _leftFootAdapter = new(FindChildByName("L_Foot"), _leftFootPacket, Sleeve, isLeft: true);
+            _leftFootAdapter = new(FindChildByName("L_Foot"), _leftFootPacket, isLeft: true);
 
             _rightFootPacket = new(_landmarks, new int[4] { 26, 28, 30, 32 });
-            _rightFootAdapter = new(FindChildByName("R_Foot"), _rightFootPacket, Sleeve, isLeft: false);
+            _rightFootAdapter = new(FindChildByName("R_Foot"), _rightFootPacket, isLeft: false);
 
             _rightLegPacket = new(_landmarks, new int[7] { 12, 11, 24, 23, 26, 28, 27 });
-            _rightUpperLegAdapter = new(FindChildByName("R_UpperLeg"), _rightLegPacket, Sleeve, isLeft: false);
-            _rightLowerLegAdapter = new(FindChildByName("R_LowerLeg"), _rightLegPacket, Sleeve, isLeft: false);
+            _rightUpperLegAdapter = new(FindChildByName("R_UpperLeg"), _rightLegPacket, isLeft: false);
+            _rightLowerLegAdapter = new(FindChildByName("R_LowerLeg"), _rightLegPacket, isLeft: false);
 
             _headPacket = new(_landmarks, new int[4] { 7, 8, 11, 12 });
-            _headAdapter = new(FindChildByName("Head"), _headPacket, Sleeve);
-
-            if(_operationDimension == OperationDimension.TwoDimension)
-            {
-                TrackingAdapterBase.ValidCacheSize = 50;
-                TrackingAdapterBase.Dimension = _operationDimension;
-            }
+            _headAdapter = new(FindChildByName("Head"), _headPacket);
         }
 
         public override void ApplyMediapipeResult(PoseLandmarkerResult recognitionResult)

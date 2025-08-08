@@ -58,6 +58,9 @@ namespace VRMController
             _faceAdaptationManager.Dimension = _operationDimension;
             _handAdaptationManager.Dimension = _operationDimension;
 
+            _poseAdaptationManager.AllocatePacketAndAdapter();
+            _handAdaptationManager.AllocatePacketAndAdapter();
+
             _poseAdaptationManager.Sleeve = _sleeve;
         }
 

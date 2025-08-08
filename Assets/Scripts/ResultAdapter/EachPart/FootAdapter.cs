@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 using UnityEngine;
-using VRMController;
 
 namespace Mediapipe.Allocator
 {
@@ -13,8 +12,8 @@ namespace Mediapipe.Allocator
     {
         protected readonly bool _isLeft;
 
-        public FootAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve, bool isLeft)
-            : base(partObject, landmarksPacket, sleeve)
+        public FootAdapter(GameObject partObject, LandmarksPacket landmarksPacket, bool isLeft)
+            : base(partObject, landmarksPacket)
         {
             _isLeft = isLeft;
         }

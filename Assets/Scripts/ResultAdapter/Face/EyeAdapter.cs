@@ -42,7 +42,7 @@ namespace Mediapipe.Allocator
         // When you want to be able to close eyes, this value should be greater than 1.
         // This makes VRM Model closer to actual human movement.
         // On the other hand, if you do not want to close eyes completely, this value should be less than 1.
-        public float EaseOfClosingEyes = 1.2f;
+        public float EaseOfClosingEyes { get; set; } = 1.2f;
 
         // The larger the number, the easier it is to express surprise.
         public float SurprisedEyeSizeClampFactor { get; set; } = 1.0f;
@@ -112,16 +112,16 @@ namespace Mediapipe.Allocator
 
         #region Private Member Variables
 
-        float _binocularDistance;
-        readonly float[] _openedAmount = new float[2];
-        readonly float[] _closedAmount = new float[2];
-        readonly float[] _joyValue = new float[2];
-        readonly float[] _sorrowValue = new float[2];
-        float _spreadValue;
-        float _surprisedValue;
-        float _anglyValue;
+        private float _binocularDistance;
+        private readonly float[] _openedAmount = new float[2];
+        private readonly float[] _closedAmount = new float[2];
+        private readonly float[] _joyValue = new float[2];
+        private readonly float[] _sorrowValue = new float[2];
+        private float _spreadValue;
+        private float _surprisedValue;
+        private float _anglyValue;
 
-        readonly float[] _eyeControlValues = new float[6];
+        private readonly float[] _eyeControlValues = new float[6];
 
         #endregion
 
@@ -134,7 +134,8 @@ namespace Mediapipe.Allocator
 
             _binocularDistance = PlaneDistance(Landmark(0) - Landmark(1));
 
-            // If the face is too far from the camera, it will move unnaturally; in this case, do not move the eyes.
+            // If the face is too far from the camera, eyes will move unnaturally;
+            // In this case, do not move the eyes.
             if (_binocularDistance < RecognitionLowerLimitDistance)
             {
                 _skinnedMeshRenderer.SetBlendShapeWeight(18, 0.0f);
@@ -170,6 +171,7 @@ namespace Mediapipe.Allocator
             float OpenedAmount(int eyeIndex)
             {
                 Vector3 VerticalEyeVector;
+
                 if (eyeIndex == 0) /* Right Eye */
                 {
                     VerticalEyeVector = Landmark(3) - Landmark(2);

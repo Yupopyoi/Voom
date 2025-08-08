@@ -5,14 +5,24 @@
 // https://opensource.org/licenses/MIT.
 
 using UnityEngine;
-using VRMController;
 
 namespace Mediapipe.Allocator
 {
     public class HeadAdapter : TrackingAdapterBase
     {
-        public HeadAdapter(GameObject partObject, LandmarksPacket landmarksPacket, Sleeve sleeve)
-                                                            : base(partObject, landmarksPacket, sleeve) { }
+        // This is the offset setting for the degree of nodding.
+        // The reason is unclear, but it seems that the appropriate values differ between 2D mode and 3D mode.
+        // This value is automatically set to the appropriate value in the constructor.
+        private readonly float _droopOffset = 10.0f;
+
+        public HeadAdapter(GameObject partObject, LandmarksPacket landmarksPacket)
+                                                            : base(partObject, landmarksPacket)
+        { 
+            if(Dimension == OperationDimension.TwoDimension)
+            {
+                _droopOffset = 20.0f;
+            }
+        }
 
         /*  [Landmark Index]
          * 
@@ -96,7 +106,7 @@ namespace Mediapipe.Allocator
             stableEulerAngles.x += cancellationOfYRotation;
 
             // Rotate the head slightly negative, because in the standard state it will face downward.
-            stableEulerAngles.x -= 10.0f; // [deg]
+            stableEulerAngles.x -= _droopOffset; // [deg]
 
             float cancellationOfXRotation = chestEulerAngles.x > 180.0 ? chestEulerAngles.x - 360.0f : chestEulerAngles.x;
             stableEulerAngles.x -= cancellationOfXRotation;
@@ -119,7 +129,7 @@ namespace Mediapipe.Allocator
             }
 
             // Prohibit movements that are impossible for humans to do.
-            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -20.0f, 20.0f);
+            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z * 1.2f, -20.0f, 20.0f);
 
             #endregion
 
