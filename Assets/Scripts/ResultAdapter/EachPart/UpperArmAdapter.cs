@@ -13,23 +13,26 @@ namespace Mediapipe.Allocator
         public UpperArmAdapter(GameObject partObject, LandmarksPacket landmarksPacket, bool isLeft)
             : base(partObject, landmarksPacket, isLeft){}
 
-         /*  [Landmark Index]
-         * 
-         *   | Call Index |  Mediapipe Index [L/R] |        Part       |
-         *   |:----------:|:----------------------:|:-----------------:|
-         *   |     0      |        11 / 12         |      shoulder     |
-         *   |     1      |        13 / 14         |       elbow       |
-         *   |     2      |        12 / 11         | opposite shoulder |
-         *   |     3      |        15 / 16         |       wrist       |
-         *   |     4      |        23 / 24         |        hip        |
-         *   |     5      |        24 / 23         |    opposite hip   |
-         */
+        public float NaturalRotation { get; set; } = 65.0f;
+
+        /*  [Landmark Index]
+        * 
+        *   | Call Index |  Mediapipe Index [L/R] |        Part       |
+        *   |:----------:|:----------------------:|:-----------------:|
+        *   |     0      |        11 / 12         |      shoulder     |
+        *   |     1      |        13 / 14         |       elbow       |
+        *   |     2      |        12 / 11         | opposite shoulder |
+        *   |     3      |        15 / 16         |       wrist       |
+        *   |     4      |        23 / 24         |        hip        |
+        *   |     5      |        24 / 23         |    opposite hip   |
+        */
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             if (!LandmarkVisibility(1))/* The elbow is not visible */
             {
-                Quaternion naturalQuaternion = Quaternion.Euler(new Vector3(0.0f, 0.0f, 65.0f * RightMinus));
+                // Since elbow is not visible, fix arm in lowered position
+                var naturalQuaternion = Quaternion.Euler(new Vector3(0.0f, 0.0f, NaturalRotation * RightMinus));
 
                 ApplyRotation(naturalQuaternion);
                 return;
@@ -58,20 +61,14 @@ namespace Mediapipe.Allocator
             var stableEulerAngles = smoothedRotationLHS.eulerAngles;
 
             stableEulerAngles.z -= 10 * RightMinus;
-            //stableEulerAngles.y += 5.0f;
 
             if (stableEulerAngles.x > 270)
             {
                 stableEulerAngles.x = 0.0f;
             }
-            if (stableEulerAngles.y > 180)
-            {
-                stableEulerAngles.y -= 360.0f;
-            }
-            if (stableEulerAngles.z > 180)
-            {
-                stableEulerAngles.z -= 360.0f;
-            }
+
+            stableEulerAngles.y = ContinuousAngleValue(stableEulerAngles.y, 180.0f);
+            stableEulerAngles.z = ContinuousAngleValue(stableEulerAngles.z, 180.0f);
 
             stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, -90.0f, 90.0f);
             stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -90.0f, 80.0f);

@@ -21,37 +21,70 @@ namespace Mediapipe.Allocator
         /// The smaller the number (less than 0), the more it is corrected.
         /// Conversely, the larger the value, the more the model becomes stooped.
         /// </summary>
-        private float _shigureUI = -5.0f;
+        public float ShigureUI { get; set; } = - 5.0f;
+
+        /// <summary>
+        /// Prevents excessive rotation around the y-axis.
+        /// If this value is set to less than 0.01, rotation around the y-axis will not occur.
+        /// The recommended value is 0.8f.
+        /// </summary>
+        public float RotationalResistanceAroundYaxis { get; set; } = 0.8f;
 
         // Points
         private Vector3 _leftShoulder;
         private Vector3 _rightShoulder;
         private Vector3 _leftHip;
         private Vector3 _rightHip;
-        private Vector3 _nose;
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             _leftShoulder = Landmark(0);
             _rightShoulder = Landmark(1);
+
+            if (Is2D())
+            {
+                // In 2D mode (sitting mode), "chest" is responsible only for rotation around the y-axis.
+                // This is defined by the direction in which "Shoulder Vector" is looking in global space.
+                
+                Vector3 shoulderVector = (_leftShoulder - _rightShoulder).normalized;
+
+                Quaternion rotation = Quaternion.FromToRotation(Vector3.right, shoulderVector);
+                
+                Vector3 eulerAngles = rotation.eulerAngles;
+
+                if(RotationalResistanceAroundYaxis < 0.01f)
+                {
+                    eulerAngles.y = 0.0f;
+                }
+                else
+                {
+                    eulerAngles.y = ToSmoothStair(ContinuousAngleValue(eulerAngles.y), 
+                                                  90.0f / RotationalResistanceAroundYaxis, 0.02f) * RotationalResistanceAroundYaxis;
+                }
+
+                // Not applicable
+                eulerAngles.x = 0;
+                eulerAngles.z = 0;
+
+                ApplyRotation(PreventUnwantedRotation(Quaternion.Euler(eulerAngles)));
+                return;
+            }
+
+            // 3D Mode (All Body Tracking) ------------------------------
+
             _leftHip = Landmark(2);
             _rightHip = Landmark(3);
-            _nose = Landmark(4);
 
             // Center of torso
             Vector3 chestCenterPoint = (_leftShoulder + _rightShoulder) * 0.5f;
             Vector3 hipCenterPoint = (_leftHip + _rightHip) * 0.5f;
 
-            Vector3 up = (hipCenterPoint - chestCenterPoint).normalized;
-
-            if(Dimension == OperationDimension.TwoDimension)
-            {
-                up = Vector3.up;
-            }
-
             Vector3 right = (_rightShoulder - _leftShoulder).normalized;
-            Vector3 forward = Vector3.Cross(up, right).normalized;
-            right = Vector3.Cross(forward, up).normalized;
+            Vector3 upHint = (hipCenterPoint - chestCenterPoint).normalized;
+
+            Vector3 forward = Vector3.Cross(upHint, right).normalized;
+            Vector3 up = Vector3.Cross(right,forward).normalized;
+            forward = Vector3.Cross(up, right).normalized;
 
             _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, chestCenterPoint);
 
@@ -74,7 +107,7 @@ namespace Mediapipe.Allocator
             var stableEulerAngles = smoothedRotationLHS.eulerAngles;
 
             // Preventing excessive forward leaning
-            stableEulerAngles.x -= _shigureUI;
+            stableEulerAngles.x -= ShigureUI;
 
             if (stableEulerAngles.x > 180.0f) stableEulerAngles.x -= 360.0f;
 

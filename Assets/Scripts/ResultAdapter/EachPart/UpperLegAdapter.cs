@@ -44,7 +44,7 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
-            if (!Is3D()) return; // Only execute for full body tracking.
+            if (Is2D()) return; // Only execute for full body tracking.
 
             if (!LandmarkVisibility(2) && !LandmarkVisibility(3) /* Both hips are not visible */)
             {

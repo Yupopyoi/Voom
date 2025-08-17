@@ -93,7 +93,7 @@ namespace Mediapipe.UnityRunner.PoseLandmarkDetection
 
     public class TimeIntervalTracker
     {
-        private Stopwatch stopwatch;
+        private readonly Stopwatch stopwatch;
 
         public TimeIntervalTracker()
         {

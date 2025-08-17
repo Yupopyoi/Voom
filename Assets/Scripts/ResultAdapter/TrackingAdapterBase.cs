@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+using Mono.Cecil;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -90,24 +91,23 @@ namespace Mediapipe.Allocator
     public abstract class TrackingAdapterBase :IPoseAdapter
     {
         private readonly GameObject _partObject;
-        private static Sleeve _sleeve; // Reservation
         private static OperationDimension _operationDimension = OperationDimension.ThreeDimension;
-        private static bool _isUsingMocopi = false; // Reservation
 
         private Vector3 _initTransform;
         private LandmarksPacket _landmarksPacket;
-
-        protected PoseMatrix _poseMatrix;
 
         protected const int CACHE_SIZE = 50;
         private static int _validCacheSize = 15;
         private readonly Queue<Quaternion> _quaternionCache;
 
         private Quaternion _latestQuaternion;
+        protected PoseMatrix _poseMatrix;
+
+        #region Public Properties
 
         public Quaternion LatestQuaternion => _latestQuaternion;
 
-        public PoseMatrix PoseMatrix { get { return _poseMatrix; } set { _poseMatrix = value; } }
+        public PoseMatrix PoseMatrix => _poseMatrix;
 
         public Vector3 PartObjectPosition => _partObject.transform.position;
 
@@ -132,6 +132,8 @@ namespace Mediapipe.Allocator
             set { _operationDimension = value; }
         }
 
+        #endregion
+
         protected TrackingAdapterBase(GameObject partObject, LandmarksPacket landmarksPacket)
         {
             _partObject = partObject;
@@ -146,6 +148,8 @@ namespace Mediapipe.Allocator
 
             _latestQuaternion = _partObject.transform.rotation;
         }
+
+        #region Protected Utils (Not Static)
 
         protected string PartName()
         {
@@ -239,6 +243,17 @@ namespace Mediapipe.Allocator
         }
 
         /// <summary>
+        /// Return Initial LocalEulerAngles
+        /// </summary>
+        /// <returns></returns>
+        protected Vector3 InitialTransform()
+        {
+            return _initTransform;
+        }
+
+        #endregion
+
+        /// <summary>
         /// Apply angles from the center of the body outward as they are derived.
         /// For example, when considering arm movement,
         /// the body (torso) is the “parent” and we calculate the amount of arm rotation as its “child”.
@@ -259,16 +274,6 @@ namespace Mediapipe.Allocator
             if (isDebug) GameLogger.Log(smoothedRotationLHS);
 
             return smoothedRotationLHS; 
-        }
-
-        /// <summary>
-        /// This function is dangerous because it ignores all calclations and sets the quaternion value directly.
-        /// This function should basically only be used for debugging.
-        /// </summary>
-        /// <param name="q">Quaternion value</param>
-        public void SetWorldRotationDirectly(Quaternion q)
-        {
-            _partObject.transform.rotation = q;
         }
 
         #region Static Utils
@@ -335,6 +340,43 @@ namespace Mediapipe.Allocator
                                                   new Vector3(0.0f, 0.0f, 0.0f));
         }
 
+        protected static float ContinuousAngleValue(float rawAngleValue, float thresholdAngleValue = 180.0f)
+        {
+            if (rawAngleValue > thresholdAngleValue)
+            {
+                return rawAngleValue - 360.0f;
+            }
+
+            return rawAngleValue;
+        }
+
+        protected static Vector3 ContinuousAngleValue(Vector3 rawVector, float thresholdAngleValue = 180.0f)
+        {
+            return new Vector3(ContinuousAngleValue(rawVector.x, thresholdAngleValue),
+                               ContinuousAngleValue(rawVector.y, thresholdAngleValue),
+                               ContinuousAngleValue(rawVector.z, thresholdAngleValue));
+        }
+
+        protected static Quaternion ContinuousAngleValue(Quaternion rawQuaternion, float thresholdAngleValue = 180.0f)
+        {
+            Vector3 eulerAngles = ContinuousAngleValue(rawQuaternion.eulerAngles);
+
+            return Quaternion.Euler(eulerAngles);
+        }
+
+        /// <summary>
+        /// Returns whether it is in 2D mode.
+        /// </summary>
+        /// <returns></returns>
+        protected static bool Is2D()
+        {
+            if (_operationDimension == OperationDimension.TwoDimension)
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Returns whether it is in 3D mode.

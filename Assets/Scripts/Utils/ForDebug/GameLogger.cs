@@ -43,6 +43,7 @@ public static class LogUtils
 // Log(Vector3 logv)
 // Log(Vector4 logv)
 // Log(Quaternion logq, [bool _displayAsQuaternion = false])
+// Log(Quaternion logq1, Quaternion logq2)
 // Log(Vector3 logv1, Vector3 logv2) : The difference and inner product of two vectors are also displayed.
 
 public static class GameLogger
@@ -132,6 +133,30 @@ public static class GameLogger
     public static void Log(Quaternion logq, float f, int digits = 2)
     {
         Vector3Log(logq.eulerAngles, f, digits);
+    }
+
+    public static void Log(Quaternion logq1, Quaternion logq2)
+    {
+        var euler1 = logq1.eulerAngles;
+        var euler2 = logq2.eulerAngles;
+
+        string message = $"x1 : {euler1.x:F2}, y1 : {euler1.y:F2}, z1 : {euler1.z:F2}\n"
+                       + $"x2 : {euler2.x:F2}, y2 : {euler2.y:F2}, z2 : {euler2.z:F2}";
+
+        Log(message);
+    }
+
+    public static void Log(Quaternion logq1, Quaternion logq2, Quaternion logq3)
+    {
+        var euler1 = logq1.eulerAngles;
+        var euler2 = logq2.eulerAngles;
+        var euler3 = logq3.eulerAngles;
+
+        string message = $"x1 : {euler1.x:F2}, y1 : {euler1.y:F2}, z1 : {euler1.z:F2}\n"
+                       + $"x2 : {euler2.x:F2}, y2 : {euler2.y:F2}, z2 : {euler2.z:F2}\n"
+                       + $"x3 : {euler3.x:F2}, y3 : {euler3.y:F2}, z3 : {euler3.z:F2}\n";
+
+        Log(message);
     }
 
     public static void Log(Vector4 logv, int digits = 2)

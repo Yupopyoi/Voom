@@ -10,19 +10,8 @@ namespace Mediapipe.Allocator
 {
     public class HeadAdapter : TrackingAdapterBase
     {
-        // This is the offset setting for the degree of nodding.
-        // The reason is unclear, but it seems that the appropriate values differ between 2D mode and 3D mode.
-        // This value is automatically set to the appropriate value in the constructor.
-        private readonly float _droopOffset = 10.0f;
-
         public HeadAdapter(GameObject partObject, LandmarksPacket landmarksPacket)
-                                                            : base(partObject, landmarksPacket)
-        { 
-            if(Dimension == OperationDimension.TwoDimension)
-            {
-                _droopOffset = 20.0f;
-            }
-        }
+                                                            : base(partObject, landmarksPacket){}
 
         /*  [Landmark Index]
          * 
@@ -31,108 +20,100 @@ namespace Mediapipe.Allocator
          *        1                8             right ear
 　　　　 *        2               11           left  shoulder
          *        3               12           right shoulder
+　　　　 *        4                0                nose
          */
 
         private Quaternion _chestQuaternion;
 
-        // Points
-        private Vector3 _leftEar;
-        private Vector3 _rightEar;
-        private Vector3 _leftShoulder;
-        private Vector3 _rightShoulder;
+        public bool CanRotateAroundXaxis { get; set; } = true;
+        public float NodOffset { get; set; } = 20.0f;
+
+        // Neck rotation, This is transmitted to the neck.
+        private Vector3 _neckRotation = new();
+        public Vector3 NeckRotation => _neckRotation;
+
+        private float _divisionRatioToNeck = 0.5f;
+        public float DivisionRatioToNeck 
+        { 
+            get {  return _divisionRatioToNeck; }
+            set { _divisionRatioToNeck = Mathf.Clamp01(value); } 
+        }
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             _chestQuaternion = parentQuaternion.Value;
 
-            _leftEar = Landmark(0);
-            _rightEar = Landmark(1);
-            _leftShoulder = Landmark(2);
-            _rightShoulder = Landmark(3);
+            Vector3 earVector = (Landmark(1) - Landmark(0)).normalized;
 
-            // Base direction vector (left to right ear)
-            Vector3 right = (_rightEar - _leftEar).normalized;
+            Vector3 shoulderMidPoint = (Landmark(2) + Landmark(3)) * 0.5f;
 
-            // Upward vector (from midpoint of shoulders to midpoint of ears)
-            Vector3 shoulderMid = (_leftShoulder + _rightShoulder) * 0.5f;
-            Vector3 earMid = (_leftEar + _rightEar) * 0.5f;
-            Vector3 up = (earMid - shoulderMid).normalized;
+            Vector3 noseShoulderVector = Landmark(4) - shoulderMidPoint;
 
-            // Forward vector derived from cross product
-            Vector3 forward = Vector3.Cross(up, right).normalized;
+            static float EulerAngleZ(Vector3 earVector)
+            {
+                Vector2 spineVectorProjectedXYPlane = ((Vector2)earVector).normalized;
 
-            // Recalculate up vector to ensure orthogonality
-            up = Vector3.Cross(forward, right).normalized;
+                float cos = Vector2.Dot(spineVectorProjectedXYPlane, Vector2.up /* y-axis */);
 
-            // Construct and apply PoseMatrix
-            _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, earMid);
+                return Mathf.Acos(cos) * Mathf.Rad2Deg - 90.0f;
+            }
 
-            Quaternion stable = ToSmoothStair(_poseMatrix.RotationLHS);
-            ApplyRotation(PreventUnwantedRotation(stable));
+            static float EulerAngleY(Vector3 earVector)
+            {
+                Vector2 spineVectorProjectedXZPlane = new Vector2(earVector.x, earVector.z).normalized;
+
+                float cos = Vector2.Dot(spineVectorProjectedXZPlane, Vector2.up);
+
+                return - Mathf.Acos(cos) * Mathf.Rad2Deg + 90.0f;
+            }
+
+            float EulerAngleX(Vector3 noseShoulderVector)
+            {
+                if (!CanRotateAroundXaxis) return 0.0f;
+
+                Vector2 spineVectorProjectedYZPlane = new Vector2(noseShoulderVector.y, noseShoulderVector.z).normalized;
+
+                float cos = Vector2.Dot(spineVectorProjectedYZPlane, Vector2.right);
+
+                return - Mathf.Acos(cos) * Mathf.Rad2Deg + 90.0f + NodOffset;
+            }
+
+            Quaternion absoluteRotation = Quaternion.Euler(new Vector3(EulerAngleX(noseShoulderVector), 
+                                                                       EulerAngleY(earVector), 
+                                                                       EulerAngleZ(earVector)));
+
+            // Eliminate body rotation
+            Quaternion relativeRotation = Quaternion.Inverse(_chestQuaternion) * absoluteRotation;
+
+            // XXX : It works when multiplied by Inverse(_chestQuaternion) twice, not sure why.
+            Quaternion beforeDivisionRotation 
+                = PreventUnwantedRotation(Quaternion.Inverse(_chestQuaternion) * relativeRotation);
+
+            // If we try to achieve facial movements using only the movement of the head (object),
+            // the neck area will look unnatural.
+            // Therefore, assign the movement to the neck (object) based on the DivisionRatioToNeck ratio.
+            Vector3 beforeDivisionEulerAngles = beforeDivisionRotation.eulerAngles;
+
+            Quaternion afterDivisionRotation
+                = Quaternion.Euler(ContinuousAngleValue(beforeDivisionEulerAngles).Mul(1.0f - DivisionRatioToNeck));
+
+            _neckRotation = ContinuousAngleValue(beforeDivisionEulerAngles).Mul(DivisionRatioToNeck);
+
+            // Apply
+            ApplyRotation(afterDivisionRotation);
         }
 
         protected override Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS, bool isDebug = false)
         {
-            var stableEulerAngles = smoothedRotationLHS.eulerAngles;
-            var chestEulerAngles = _chestQuaternion.eulerAngles;
+            Vector3 rawEulerAngles = smoothedRotationLHS.eulerAngles;
 
-            #region Rotation around the midline (stableEulerAngles.y)
+            Vector3 stableEulerAngles = ContinuousAngleValue(rawEulerAngles);
 
-            // Cancel out the rotation of the torso
-            float cancellationAmountOfChestRotation =
-                chestEulerAngles.y > 180.0 ? chestEulerAngles.y - 360.0f : chestEulerAngles.y;
-
-            stableEulerAngles.y -= cancellationAmountOfChestRotation * 2.0f;
-
-            // Make movements continuous
-            // A change from around 0 degrees (e.g., 10 degrees)
-            // to around 360 degrees (e.g., 350 degrees) means almost a full rotation.
-            // To prevent this, subtract 360 in advance from the value around 360 degrees.
-            if (stableEulerAngles.y > 180.0)
-            {
-                stableEulerAngles.y -= 360.0f;
-            }
-
-            // Prohibit movements that are impossible for humans to do.
-            stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, -75.0f, 75.0f);
-
-            #endregion
-
-            #region Nod (stableEulerAngles.x)
-
-            // For reasons unknown, rotation in the y direction causes unintended rotation in the x direction as well.
-            // This is corrected here.
-            float cancellationOfYRotation = Mathf.Abs(stableEulerAngles.y) * 0.2f;
-            stableEulerAngles.x += cancellationOfYRotation;
-
-            // Rotate the head slightly negative, because in the standard state it will face downward.
-            stableEulerAngles.x -= _droopOffset; // [deg]
-
-            float cancellationOfXRotation = chestEulerAngles.x > 180.0 ? chestEulerAngles.x - 360.0f : chestEulerAngles.x;
-            stableEulerAngles.x -= cancellationOfXRotation;
-
-            // The output of MediaPipe itself is not sufficient to achieve sufficient movement,
-            // therefore, movement is amplified.
-            float nodSensitivity = stableEulerAngles.x > 0.0f ? 2.0f : 5.0f;
-
-            // Prohibit movements that are impossible for humans to do.
-            stableEulerAngles.x = Mathf.Clamp(stableEulerAngles.x * nodSensitivity, -60.0f, 25.0f);
-
-            #endregion
-
-            #region Tilt (stableEulerAngles.z)
-
-            // Make movements continuous
-            if (stableEulerAngles.z > 180.0)
-            {
-                stableEulerAngles.z -= 360.0f;
-            }
-
-            // Prohibit movements that are impossible for humans to do.
-            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z * 1.2f, -20.0f, 20.0f);
-
-            #endregion
-
+            // Prohibit movements that exceed the range of motion of the human neck.
+            stableEulerAngles.x = Mathf.Clamp(stableEulerAngles.x, -20.0f, 90.0f);
+            stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, -90.0f, 90.0f);
+            stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -60.0f, 60.0f);
+            
             if (isDebug) GameLogger.Log(stableEulerAngles);
 
             return Quaternion.Euler(stableEulerAngles);

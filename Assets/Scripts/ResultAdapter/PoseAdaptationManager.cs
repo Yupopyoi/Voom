@@ -43,6 +43,8 @@ namespace Mediapipe.Allocator
         // Head
         LandmarksPacket _headPacket;
         HeadAdapter _headAdapter;
+        LandmarksPacket _neckPacket;
+        NeckAdapter _neckAdapter;
 
         // Left Leg
         LandmarksPacket _leftLegPacket;
@@ -76,7 +78,7 @@ namespace Mediapipe.Allocator
         {
             if (_operationDimension == OperationDimension.TwoDimension)
             {
-                TrackingAdapterBase.ValidCacheSize = 50;
+                TrackingAdapterBase.ValidCacheSize = 25;
                 TrackingAdapterBase.Dimension = _operationDimension;
             }
 
@@ -117,8 +119,10 @@ namespace Mediapipe.Allocator
             _rightUpperLegAdapter = new(FindChildByName("R_UpperLeg"), _rightLegPacket, isLeft: false);
             _rightLowerLegAdapter = new(FindChildByName("R_LowerLeg"), _rightLegPacket, isLeft: false);
 
-            _headPacket = new(_landmarks, new int[4] { 7, 8, 11, 12 });
+            _headPacket = new(_landmarks, new int[5] { 7, 8, 11, 12, 0 });
             _headAdapter = new(FindChildByName("Head"), _headPacket);
+            _neckPacket = new(_landmarks, new int[0]);
+            _neckAdapter = new(FindChildByName("Neck"), _neckPacket);
         }
 
         public override void ApplyMediapipeResult(PoseLandmarkerResult recognitionResult)
@@ -140,11 +144,14 @@ namespace Mediapipe.Allocator
 
             _headAdapter.ForwardApply(parentQuaternion: _hipAdapter.LatestQuaternion * _chestAdapter.LatestQuaternion);
 
+            _neckAdapter.SetRotation(_headAdapter.NeckRotation);
+            _neckAdapter.ForwardApply();
+
             // Arm
 
             _leftUpperArmAdapter.ForwardApply(parentMatrix : _chestAdapter.PoseMatrix);
-            _leftLowerArmAdapter.ForwardApply();
-
+            //_leftLowerArmAdapter.ForwardApply();
+            return;
             _rightUpperArmAdapter.ForwardApply(parentMatrix: _chestAdapter.PoseMatrix);
             _rightLowerArmAdapter.ForwardApply();
 
