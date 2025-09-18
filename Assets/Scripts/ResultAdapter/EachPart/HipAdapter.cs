@@ -24,6 +24,12 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
+            if (!LandmarkVisibility(2) || !LandmarkVisibility(3))
+            {
+                ApplyRotation(Quaternion.Euler(InitialTransform()));
+                return;
+            }
+
             _leftHip = Landmark(0);
             _rightHip = Landmark(1);
 
@@ -38,29 +44,11 @@ namespace Mediapipe.Allocator
                 // You can get the hip position pretty accurately when you're sitting down.
                 Vector3 spineVector = hipCenter - shoulderCenter;
 
-                static float EulerAngleZ(Vector3 spineVector)
-                {
-                    Vector2 spineVectorProjectedXYPlane = ((Vector2)spineVector).normalized;
+                Vector3 rotationAngles = Vector3.zero;
+                rotationAngles.x = CanRotateAroundXaxis ? EulerAngleX(spineVector, Vector2.right, true) : InitialTransform().x;
+                rotationAngles.z = EulerAngleZ(spineVector, Vector2.right, true, -90.0f);
 
-                    // Calculate the dot product with the x-axis (not y-axis) to be able to distinguish
-                    // between positive and negative (left and right) directions.
-                    float cos = Vector2.Dot(spineVectorProjectedXYPlane, Vector2.right /* x-axis */);
-                    return Mathf.Acos(cos) * Mathf.Rad2Deg;
-                }
-
-                float EulerAngleX(Vector3 spineVector)
-                {
-                    if (!CanRotateAroundXaxis) return InitialTransform().x;
-
-                    Vector2 spineVectorProjectedYZPlane = new Vector2(spineVector.y, spineVector.z).normalized;
-
-                    float cos = Vector2.Dot(spineVectorProjectedYZPlane, Vector2.right /* z-axis */);
-                    
-                    return ToSmoothStair(Mathf.Acos(cos) * Mathf.Rad2Deg) - InitialTransform().x;
-                }
-
-                Quaternion stableRotation = 
-                    Quaternion.Euler(new Vector3(EulerAngleX(spineVector), 0.0f, EulerAngleZ(spineVector) - 90.0f));
+                Quaternion stableRotation = Quaternion.Euler(rotationAngles);
 
                 ApplyRotation(PreventUnwantedRotation(stableRotation));
 

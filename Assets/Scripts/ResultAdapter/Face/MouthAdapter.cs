@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace Mediapipe.Allocator
 {
+
     public class MouthAdapter : EmotionAdapterBase
     {
         public MouthAdapter(GameObject faceObject, LandmarksPacket landmarksPacket)
@@ -25,15 +26,13 @@ namespace Mediapipe.Allocator
 
         public float SensitivityFunny { get; set; } = 1.0f;
 
-        public float SensitivityAngly { get; set; } = 1.0f;
+        public float SensitivityAngry { get; set; } = 1.0f;
 
         public float VerticalOpenMax { get; set; } = 70.0f;
 
         public float SorrowMax { get; set; } = 100.0f;
 
         public float OverallOpenMax { get; set; } = 100.0f;
-
-        public float PoutingMax { get; set; } = 80.0f;
 
         public float FunnyMax { get; set; } = 80.0f;
 
@@ -44,6 +43,12 @@ namespace Mediapipe.Allocator
         public float SurpriseEyebrowOffset { get; set; } = 1.0f;
 
         public float SurpriseEyebrowScale { get; set; } = 1.0f;
+
+        public float MouthPositionOffset { get; set; } = 0.0f;
+
+        public float MouthPositionGain { get; set; } = 85.0f;
+
+        public float MouthPositionMin { get; set; } = 20.0f;
 
         #endregion
 
@@ -87,6 +92,7 @@ namespace Mediapipe.Allocator
         float _funnyValue;
         float _anglyValue;
         float _surpriseValue;
+        float _downValue;
 
         public override void ForwardApply()
         {
@@ -98,6 +104,8 @@ namespace Mediapipe.Allocator
             CalculateRaisingCornersAmount();
 
             CalculateSurpriseAmount();
+
+            CalculateMouthDownAmount();
 
             Adapt();
 
@@ -157,7 +165,7 @@ namespace Mediapipe.Allocator
                 else /* Angly */
                 {
                     _funnyValue = 0.0f;
-                    _anglyValue = BindControlValue(- raisingCornerLengthRatio - 0.05f, SensitivityAngly * 22.5f, AnglyMax) * correctionValueOfCorners;
+                    _anglyValue = BindControlValue(- raisingCornerLengthRatio - 0.05f, SensitivityAngry * 22.5f, AnglyMax) * correctionValueOfCorners;
                 }
             }
 
@@ -172,6 +180,26 @@ namespace Mediapipe.Allocator
                 _surpriseValue = BindControlValue(eyebrowToEyeLengthRatio, SurpriseEyebrowScale * 3.0f, 1.0f);
             }
 
+            void CalculateMouthDownAmount()
+            {
+                // This function expresses for example the gmunchingh when eating something.
+                // This is defined by the RATIO of the distance from the eyes to the mouth
+                // relative to the distance between the left and right eyes (=_binocularDistance).
+
+                Vector3 positionBetweenEyes = (Landmark(9) + Landmark(10)).Mul(0.5f);
+
+                Vector3 lowerMouthCentral = Landmark(1);
+
+                Vector3 vectorMouthToEyes = positionBetweenEyes - lowerMouthCentral;
+
+                // This number is normally around 4.0, and during chewing movements , it is around 5.0.
+                float distanceRatio = PlaneDistance(vectorMouthToEyes) / _binocularDistance;
+
+                float standardizedDistanceRatio = distanceRatio / 4.0f + MouthPositionOffset;
+
+                _downValue = (standardizedDistanceRatio - 1.0f) * MouthPositionGain;
+            }
+
             void Adapt()
             {
 
@@ -183,7 +211,19 @@ namespace Mediapipe.Allocator
 
                 _skinnedMeshRenderer.SetBlendShapeWeight(32 /* Fcl_MTH_Fun */ , _funnyValue * OverallOperatingScale);
 
-                _skinnedMeshRenderer.SetBlendShapeWeight(28 /* Fcl_MTH_Angly */ , _anglyValue * OverallOperatingScale);
+                _skinnedMeshRenderer.SetBlendShapeWeight(28 /* Fcl_MTH_Angry */ , _anglyValue * OverallOperatingScale);
+
+                if(_downValue > 0.0f)
+                {
+                    _skinnedMeshRenderer.SetBlendShapeWeight(26 /* Fcl_MTH_Up   */ , 0.0f);
+                    _skinnedMeshRenderer.SetBlendShapeWeight(27 /* Fcl_MTH_Down */ , 
+                                                            (_downValue > MouthPositionMin) ? MouthPositionMin : _downValue);
+                }
+                else
+                {
+                    _skinnedMeshRenderer.SetBlendShapeWeight(26 /* Fcl_MTH_Up   */ , _downValue);
+                    _skinnedMeshRenderer.SetBlendShapeWeight(27 /* Fcl_MTH_Down */ , 0.0f);
+                }
 
             }
         }

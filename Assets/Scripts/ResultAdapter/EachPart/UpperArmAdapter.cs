@@ -29,6 +29,68 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
+            if (Is2D())
+            {
+
+                Vector3 armVector = (Landmark(1) - Landmark(0)).normalized;
+
+
+
+                static float EulerAngleZ(Vector3 armVector)
+                {
+                    Vector2 spineVectorProjectedXYPlane = ((Vector2)armVector).normalized;
+
+                    float cos = Vector2.Dot(spineVectorProjectedXYPlane, Vector2.up /* y-axis */);
+
+                    return - Mathf.Acos(cos) * Mathf.Rad2Deg;
+                }
+
+                static float EulerAngleY(Vector3 earVector)
+                {
+                    Vector2 spineVectorProjectedXZPlane = new Vector2(earVector.x, earVector.z).normalized;
+
+                    float cos = Vector2.Dot(spineVectorProjectedXZPlane, Vector2.up);
+
+                    //GameLogger.Log(cos);
+                    return Mathf.Acos(cos) * Mathf.Rad2Deg;
+                }
+
+                float EulerAngleX(Vector3 spineVector)
+                {
+                    //if (!CanRotateAroundXaxis) return InitialTransform().x;
+
+                    Vector2 spineVectorProjectedYZPlane = new Vector2(spineVector.y, spineVector.z).normalized;
+
+                    float cos = Vector2.Dot(spineVectorProjectedYZPlane, Vector2.right /* z-axis */);
+
+                    return ToSmoothStair(Mathf.Acos(cos) * Mathf.Rad2Deg) - InitialTransform().x;
+                }
+
+                Quaternion q = Quaternion.Euler(new Vector3(0.0f, EulerAngleY(armVector), EulerAngleZ(armVector) + 90.0f));
+
+                ApplyRotation(PreventUnwantedRotation(q));
+                return;
+
+                Vector3 shoulder = Landmark(0); // Point: shoulder
+                Vector3 elbow = Landmark(1);    // Point: elbow
+
+                // Vector (X Axis) : Elbow -> Shoulder
+                Vector3 right = (shoulder - elbow).normalized;
+
+                // Vector (Z Axis) : Defined using upHint
+                Vector3 upHint = parentMatrix.Value.Up;
+                Vector3 forward = (Vector3.Cross(right, upHint).normalized) * RightMinus;
+
+                // Vector (Y Axis)
+                Vector3 up = (Vector3.Cross(forward, right).normalized) * RightMinus;
+
+                _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, shoulder);
+
+                ApplyRotation(PreventUnwantedRotation(_poseMatrix.RotationLHS));
+                return;
+            }
+
+
             if (!LandmarkVisibility(1))/* The elbow is not visible */
             {
                 // Since elbow is not visible, fix arm in lowered position
@@ -37,7 +99,7 @@ namespace Mediapipe.Allocator
                 ApplyRotation(naturalQuaternion);
                 return;
             }
-
+            /*
             Vector3 shoulder = Landmark(0); // Point: shoulder
             Vector3 elbow = Landmark(1);    // Point: elbow
 
@@ -53,7 +115,7 @@ namespace Mediapipe.Allocator
 
             _poseMatrix = PoseMatrix.SetBasisAndPosition(right, up, forward, shoulder);
 
-            ApplyRotation(PreventUnwantedRotation(_poseMatrix.RotationLHS));
+            ApplyRotation(PreventUnwantedRotation(_poseMatrix.RotationLHS));*/
         }
 
         protected override Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS, bool isDebug = false)

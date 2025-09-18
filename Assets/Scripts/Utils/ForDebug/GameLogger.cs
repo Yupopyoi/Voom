@@ -105,6 +105,17 @@ public static class GameLogger
         TwoPointsLog(logv1, logv2);
     }
 
+    public static void Log(Quaternion? logq, int digits = 2, string prefix = "")
+    {
+        if (logq == null)
+        {
+            Log("This Quaternion is null !");
+            return;
+        }
+
+        Vector3Log(logq.Value.eulerAngles, digits, prefix: prefix);
+    }
+
     public static void Log(Quaternion logq, bool _displayAsQuaternion = false, int digits = 2, string prefix = "")
     {
         if(_displayAsQuaternion)

@@ -15,18 +15,35 @@ namespace Mediapipe.Allocator
 
         /*  [Landmark Index]
          * 
-         *    Call Index    Mediapipe Index         Part
-         *        0                7             left  ear
-         *        1                8             right ear
-　　　　 *        2               11           left  shoulder
-         *        3               12           right shoulder
-　　　　 *        4                0                nose
+         *   | Call Index |  Mediapipe Index |        Part       |
+         *   |:----------:|:----------------:|:-----------------:|
+         *   |     0      |         7        |     left  ear     |
+         *   |     1      |         8        |     right ear     |
+         *   |     2      |        11        |   left  shoulder  |
+         *   |     3      |        12        |   right shoulder  |
+         *   |     4      |         0        |        nose       |
+         * 
          */
 
-        private Quaternion _chestQuaternion;
+        #region Public properties that may vary depending on the person
 
         public bool CanRotateAroundXaxis { get; set; } = true;
-        public float NodOffset { get; set; } = 20.0f;
+
+        /// <summary>
+        /// Correction amount for rotation around the X-axis [deg]
+        /// </summary>
+        public float NodOffset { get; set; } = 30.0f;
+
+        /// <summary>
+        /// Increase the angle of lookup by this variable multiple.
+        /// </summary>
+        public float LookUpGain { get; set; } = 1.5f;
+
+        #endregion
+
+        #region Variables for control
+
+        private Quaternion _chestQuaternion;
 
         // Neck rotation, This is transmitted to the neck.
         private Vector3 _neckRotation = new();
@@ -39,48 +56,41 @@ namespace Mediapipe.Allocator
             set { _divisionRatioToNeck = Mathf.Clamp01(value); } 
         }
 
+        #endregion
+
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
             _chestQuaternion = parentQuaternion.Value;
 
             Vector3 earVector = (Landmark(1) - Landmark(0)).normalized;
-
             Vector3 shoulderMidPoint = (Landmark(2) + Landmark(3)) * 0.5f;
+            Vector3 noseShoulderVector = shoulderMidPoint - Landmark(4);
 
-            Vector3 noseShoulderVector = Landmark(4) - shoulderMidPoint;
-
-            static float EulerAngleZ(Vector3 earVector)
+            if(!LandmarkVisibility(4 /* Nose */) || !LandmarkVisibility(2) || !LandmarkVisibility(3))
             {
-                Vector2 spineVectorProjectedXYPlane = ((Vector2)earVector).normalized;
-
-                float cos = Vector2.Dot(spineVectorProjectedXYPlane, Vector2.up /* y-axis */);
-
-                return Mathf.Acos(cos) * Mathf.Rad2Deg - 90.0f;
+                ApplyRotation(Quaternion.Euler(InitialTransform()));
+                return;
             }
 
-            static float EulerAngleY(Vector3 earVector)
+            float LocalRotationAngleX()
             {
-                Vector2 spineVectorProjectedXZPlane = new Vector2(earVector.x, earVector.z).normalized;
+                if (!CanRotateAroundXaxis) return InitialTransform().x;
 
-                float cos = Vector2.Dot(spineVectorProjectedXZPlane, Vector2.up);
+                float x = EulerAngleX(noseShoulderVector, Vector2.right, true, -90.0f + NodOffset);
 
-                return - Mathf.Acos(cos) * Mathf.Rad2Deg + 90.0f;
+                if(x < 0.0f)
+                {
+                    x *= Mathf.Abs(LookUpGain);
+                }
+                return x;
             }
 
-            float EulerAngleX(Vector3 noseShoulderVector)
-            {
-                if (!CanRotateAroundXaxis) return 0.0f;
+            Vector3 localRotationAngles = Vector3.zero;
+            localRotationAngles.x = LocalRotationAngleX();
+            localRotationAngles.y = EulerAngleY(earVector, Vector2.up, false, 90.0f);
+            localRotationAngles.z = EulerAngleZ(earVector, Vector2.up, true, -90.0f);
 
-                Vector2 spineVectorProjectedYZPlane = new Vector2(noseShoulderVector.y, noseShoulderVector.z).normalized;
-
-                float cos = Vector2.Dot(spineVectorProjectedYZPlane, Vector2.right);
-
-                return - Mathf.Acos(cos) * Mathf.Rad2Deg + 90.0f + NodOffset;
-            }
-
-            Quaternion absoluteRotation = Quaternion.Euler(new Vector3(EulerAngleX(noseShoulderVector), 
-                                                                       EulerAngleY(earVector), 
-                                                                       EulerAngleZ(earVector)));
+            Quaternion absoluteRotation = Quaternion.Euler(localRotationAngles);
 
             // Eliminate body rotation
             Quaternion relativeRotation = Quaternion.Inverse(_chestQuaternion) * absoluteRotation;
@@ -99,7 +109,6 @@ namespace Mediapipe.Allocator
 
             _neckRotation = ContinuousAngleValue(beforeDivisionEulerAngles).Mul(DivisionRatioToNeck);
 
-            // Apply
             ApplyRotation(afterDivisionRotation);
         }
 
@@ -110,10 +119,29 @@ namespace Mediapipe.Allocator
             Vector3 stableEulerAngles = ContinuousAngleValue(rawEulerAngles);
 
             // Prohibit movements that exceed the range of motion of the human neck.
-            stableEulerAngles.x = Mathf.Clamp(stableEulerAngles.x, -20.0f, 90.0f);
+            stableEulerAngles.x = Mathf.Clamp(stableEulerAngles.x, -40.0f, 90.0f);
             stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, -90.0f, 90.0f);
             stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -60.0f, 60.0f);
-            
+
+            // Eliminate unnaturalness that occurs when the absolute value of chestQuaternion.eulerAngles.y exceeds 60,
+            // i.e., when the human torso is facing sideways.
+            // The unnaturalness here refers to the phenomenon of unintentionally moving
+            // between the two directions of facing forward or backward
+            // without being able to determine which direction the face is facing.
+            // The following program forces the face to look forward or sideways when the body is turned sideways.
+            if ((_chestQuaternion.eulerAngles.y < 180.0f) && 
+                (_chestQuaternion.eulerAngles.y >  60.0f))
+            {
+                stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, -90.0f, 0.0f);
+                stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, 0.0f, 60.0f);
+            }
+            else if ((_chestQuaternion.eulerAngles.y > 180.0f) && 
+                     (_chestQuaternion.eulerAngles.y < 300.0f)) /* i.e. _chestQuaternion.eulerAngles.y < - 60.0f */
+            {
+                stableEulerAngles.y = Mathf.Clamp(stableEulerAngles.y, 0.0f, 90.0f);
+                stableEulerAngles.z = Mathf.Clamp(stableEulerAngles.z, -60.0f, 0.0f);
+            }
+
             if (isDebug) GameLogger.Log(stableEulerAngles);
 
             return Quaternion.Euler(stableEulerAngles);

@@ -4,11 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-using Mono.Cecil;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using VRMController;
 
 namespace Mediapipe.Allocator
 {
@@ -191,7 +189,7 @@ namespace Mediapipe.Allocator
         /// The threshold is a value between 0 and 1, but in most cases, you will probably set a value between 0.7 and 0.9.
         /// If the landmark does not exist, false is returned.
         /// </summary>
-        protected bool LandmarkVisibility(int index, float threshold = 0.9f)
+        protected bool LandmarkVisibility(int index, float threshold = 0.98f)
         {
             if (index < _landmarksPacket.Capacity)
             {
@@ -271,7 +269,7 @@ namespace Mediapipe.Allocator
 
         protected virtual Quaternion PreventUnwantedRotation(Quaternion smoothedRotationLHS, bool isDebug = false) 
         {
-            if (isDebug) GameLogger.Log(smoothedRotationLHS);
+            if (isDebug) GameLogger.Log(smoothedRotationLHS, prefix:"[Base] ");
 
             return smoothedRotationLHS; 
         }
@@ -395,6 +393,85 @@ namespace Mediapipe.Allocator
         #endregion
 
         #region Functions for calculating the amount of rotation
+
+        /// <summary>
+        /// Calculates the X-axis Euler rotation angle of a given 3D vector projected onto the YZ plane.
+        /// Optionally applies a custom projection vector, sign inversion, and rotational offset.
+        /// </summary>
+        /// <param name="partVector">The 3D vector to evaluate.</param>
+        /// <param name="projectionVector"> Reference vector for projection on the YZ plane (default: Vector2.right).</param>
+        /// <param name="sign">If true, returns positive rotation; if false, inverts the sign.</param>
+        /// <param name="offset">Angle offset in degrees applied to the result.</param>
+        /// <param name="isDebug">If true, logs debug information about the dot product and the computed rotation.</param>
+        /// <returns>The calculated X-axis Euler rotation angle in degrees.</returns>
+        protected static float EulerAngleX(Vector3 partVector, Vector2 projectionVector = default,
+                                           bool sign = true, float offset = 0.0f, bool isDebug = false)
+        {
+            if (projectionVector == default) projectionVector = Vector2.right;
+
+            // Convert to Vector2
+            Vector2 spineVectorProjectedYZPlane = new Vector2(partVector.y, partVector.z).normalized;
+
+            return CalculateLocalRotation(spineVectorProjectedYZPlane, projectionVector, sign, offset, isDebug);
+        }
+
+        /// <summary>
+        /// Calculates the Y-axis Euler rotation angle of a given 3D vector projected onto the X plane.
+        /// Optionally applies a custom projection vector, sign inversion, and rotational offset.
+        /// </summary>
+        /// <param name="partVector">The 3D vector to evaluate.</param>
+        /// <param name="projectionVector"> Reference vector for projection on the XZ plane (default: Vector2.up).</param>
+        /// <param name="sign">If true, returns positive rotation; if false, inverts the sign.</param>
+        /// <param name="offset">Angle offset in degrees applied to the result.</param>
+        /// <param name="isDebug">If true, logs debug information about the dot product and the computed rotation.</param>
+        /// <returns>The calculated X-axis Euler rotation angle in degrees.</returns>
+        protected static float EulerAngleY(Vector3 partVector, Vector2 projectionVector = default,
+                                           bool sign = true, float offset = 0.0f, bool isDebug = false)
+        {
+            if (projectionVector == default) projectionVector = Vector2.up;
+
+            // Convert to Vector2
+            Vector2 spineVectorProjectedXZPlane = new Vector2(partVector.x, partVector.z).normalized;
+
+            return CalculateLocalRotation(spineVectorProjectedXZPlane, projectionVector, sign, offset, isDebug);
+        }
+
+        /// <summary>
+        /// Calculates the Z-axis Euler rotation angle of a given 3D vector projected onto the XY plane.
+        /// Optionally applies a custom projection vector, sign inversion, and rotational offset.
+        /// </summary>
+        /// <param name="partVector">The 3D vector to evaluate.</param>
+        /// <param name="projectionVector"> Reference vector for projection on the XY plane (default: Vector2.up).</param>
+        /// <param name="sign">If true, returns positive rotation; if false, inverts the sign.</param>
+        /// <param name="offset">Angle offset in degrees applied to the result.</param>
+        /// <param name="isDebug">If true, logs debug information about the dot product and the computed rotation.</param>
+        /// <returns>The calculated Z-axis Euler rotation angle in degrees.</returns>
+        protected static float EulerAngleZ(Vector3 partVector, Vector2 projectionVector = default, 
+                                           bool sign = true, float offset = 0.0f, bool isDebug = false)
+        {
+            if (projectionVector == default) projectionVector = Vector2.up;
+
+            // Convert to Vector2
+            Vector2 spineVectorProjectedXYPlane = new Vector2(partVector.x, partVector.y).normalized;
+
+            return CalculateLocalRotation(spineVectorProjectedXYPlane, projectionVector, sign, offset, isDebug);
+        }
+
+        private static float CalculateLocalRotation(Vector2 partVector, Vector2 projectionVector = default,
+                                                    bool sign = true, float offset = 0.0f, bool isDebug = false)
+        {
+            float cos = Vector2.Dot(partVector, projectionVector);
+
+            float localRotation = (Mathf.Acos(cos) * Mathf.Rad2Deg) * (sign ? 1.0f : -1.0f) + offset;
+
+            if (isDebug)
+            {
+                string message = $"V : {partVector.ToString()}, Dot : {cos:F2} , Rot : {localRotation:F2} deg";
+                GameLogger.Log(message);
+            }
+
+            return localRotation;
+        }
 
         /// <summary>
         /// Call this function to apply the rotation angle.

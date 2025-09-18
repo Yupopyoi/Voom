@@ -78,7 +78,7 @@ namespace Mediapipe.Allocator
         {
             if (_operationDimension == OperationDimension.TwoDimension)
             {
-                TrackingAdapterBase.ValidCacheSize = 25;
+                TrackingAdapterBase.ValidCacheSize = 30;
                 TrackingAdapterBase.Dimension = _operationDimension;
             }
 
@@ -121,7 +121,7 @@ namespace Mediapipe.Allocator
 
             _headPacket = new(_landmarks, new int[5] { 7, 8, 11, 12, 0 });
             _headAdapter = new(FindChildByName("Head"), _headPacket);
-            _neckPacket = new(_landmarks, new int[0]);
+            _neckPacket = new(_landmarks, new int[1] { 0 });
             _neckAdapter = new(FindChildByName("Neck"), _neckPacket);
         }
 
@@ -149,7 +149,7 @@ namespace Mediapipe.Allocator
 
             // Arm
 
-            _leftUpperArmAdapter.ForwardApply(parentMatrix : _chestAdapter.PoseMatrix);
+            _leftUpperArmAdapter.ForwardApply(parentMatrix : _chestAdapter.PoseMatrix, parentQuaternion: _hipAdapter.LatestQuaternion * _chestAdapter.LatestQuaternion);
             //_leftLowerArmAdapter.ForwardApply();
             return;
             _rightUpperArmAdapter.ForwardApply(parentMatrix: _chestAdapter.PoseMatrix);

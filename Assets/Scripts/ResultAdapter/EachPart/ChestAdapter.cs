@@ -38,6 +38,12 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply(PoseMatrix? parentMatrix = null, Quaternion? parentQuaternion = null)
         {
+            if (!LandmarkVisibility(0) || !LandmarkVisibility(1))
+            {
+                ApplyRotation(Quaternion.Euler(InitialTransform()));
+                return;
+            }
+
             _leftShoulder = Landmark(0);
             _rightShoulder = Landmark(1);
 
