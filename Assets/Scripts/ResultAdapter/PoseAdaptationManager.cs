@@ -16,6 +16,9 @@ namespace Mediapipe.Allocator
     {
         public ReadOnlyCollection<Tasks.Components.Containers.NormalizedLandmark> Landmarks => _landmarks.AsReadOnly();
 
+        // Parameters
+        //FaceParams _faceParams;
+
         // Entire Body (Root)
         LandmarksPacket _entireBodyPacket;
         BodyPositionAdapter _bodyPositionAdapter;
@@ -73,6 +76,7 @@ namespace Mediapipe.Allocator
 
             GenerateLandmarksList(33);
         }
+
 
         public void AllocatePacketAndAdapter()
         {

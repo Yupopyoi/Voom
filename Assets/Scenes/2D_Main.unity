@@ -1824,6 +1824,10 @@ PrefabInstance:
       propertyPath: _screen
       value: 
       objectReference: {fileID: 1424376619}
+    - target: {fileID: 5673237984528609402, guid: 9d4dc8c10b908cc4cb97aec495090304, type: 3}
+      propertyPath: _faceParams
+      value: 
+      objectReference: {fileID: 11400000, guid: 0ada5548fdfe5cd438d4784b532267cd, type: 2}
     - target: {fileID: 6043280999198659574, guid: 9d4dc8c10b908cc4cb97aec495090304, type: 3}
       propertyPath: _screen
       value: 

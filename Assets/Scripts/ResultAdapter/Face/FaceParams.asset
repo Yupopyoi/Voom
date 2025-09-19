@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: FaceParams
+  m_EditorClassIdentifier: Assembly-CSharp:Mediapipe.Allocator:FaceParams
+  MouthParams: {fileID: 11400000, guid: 6fd8d7edb253a9c4ba72719c752ccf03, type: 2}
+  EyeParams: {fileID: 11400000, guid: 89f32a6ce4e0c0845a8368f76f0d023c, type: 2}
+  EyebrowParams: {fileID: 11400000, guid: b11e48dc1a27231499104716d0e4f03e, type: 2}
+  EyeGazeParams: {fileID: 11400000, guid: 47aeb41a317de0a4aaebd3c09e4cb7c8, type: 2}
+  CatEarParams: {fileID: 11400000, guid: b3e6145f473f45f47b8f41c61245904d, type: 2}

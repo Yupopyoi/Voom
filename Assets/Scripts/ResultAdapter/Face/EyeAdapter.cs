@@ -11,69 +11,107 @@ using UnityEngine;
 
 namespace Mediapipe.Allocator
 {
+    [CreateAssetMenu(menuName = "Emotion/EyeParams", fileName = "EyeParams")]
+    public class EyeParams : ScriptableObject, IAdapterParams
+    {
+        [Header("General")]
+        [Tooltip("True makes the right eye close the same amount as the left eye.\n" +
+                 "This makes VRM Model's eyes less unnatural, but VRM Model won't be able to wink.")]Å@
+        public bool KeepBothEyesSameMovement = true;
+
+        public bool AlwaysDisplayEyeHighlight = true;
+
+        public bool CanModifyEyeHighlight = true;
+
+        [Tooltip("True  : It is easier to express feelings of surprise.\n"+
+                 "False : It is easier to express looking up.")]
+        public bool CanChangeSizeIris = true;
+
+        [Header("Gain")]
+        [Tooltip("The larger this number, the larger the program will recognize your eyes.\n"+
+                 "This variable is used to adjust for eye size, which varies by person.")]
+        [Range(0f, 2f)] public float EyeSizeGain = 1.0f;
+
+        [Tooltip("This number indicates the ease of closing the eye.\n"+
+                 "When you want to be able to close eyes, this value should be greater than 1.\n" +
+                 "This makes VRM Model closer to actual human movement.\n" +
+                 "On the other hand, if you do not want to close eyes completely, this value should be less than 1.")]
+        [Range(0f, 2f)] public float ClosingEyeGain = 1.2f;
+
+        [Tooltip("The larger the number, the easier it is to express surprise.")]
+        [Range(0f, 2f)] public float SurprisedEyeSizeGain = 1.0f;
+
+        [Tooltip("Variables for the impression of half-open eyes.\n" + 
+                 "around 0.0 : Cute impression\n" + 
+                 "around 3.0 : Easy to make disgusted eyes, pity impression")]
+        [Range(0f, 4f)] public float AnglyEyebrowGain = 1.0f;
+
+        [Header("Others")]
+        [Tooltip("The larger this value is, the more emphasis the expression of surprise is given.")]
+        [Range(0f, 100f)] public float ExpressionSurpriseMax = 100.0f;
+
+        [Tooltip("If the face is too far from the camera, eyes will move unnaturally.\n" + 
+                 "When the distance is less than this variable, do not move VRM Model's eyes.")]
+        [Range(0f, 2f)] public float RecognitionLowerLimitDistance = 1.0f;
+
+        [Range(0f, 2f)] public float AnglyEyebrowOffset = 0.5f;
+
+        [Header("Advanced Properties")]
+        [Range(0f, 100f)] public float BorderBetweenJoyAndSorrow = 80.0f;
+        [Range(0f, 100f)] public float MaxAmountOfEyeClosuresUsingSorrow = 90.0f;
+        [Range(0f, 0.2f)] public float GradientOfSurpriseAmountSigmoid = 0.12f;
+        [Range(0f, 0.2f)] public float GradientOfOpenCloseAmountSigmoid = 0.08f;
+
+        public void ResetToDefaults()
+        {
+            KeepBothEyesSameMovement = true;
+            AlwaysDisplayEyeHighlight = true;
+            CanModifyEyeHighlight = true;
+            CanChangeSizeIris  = true;
+
+            EyeSizeGain = 1.0f;
+            ClosingEyeGain = 1.2f;
+            SurprisedEyeSizeGain  = 1.0f;
+            AnglyEyebrowGain = 1.0f;
+            ExpressionSurpriseMax = 100.0f;
+            RecognitionLowerLimitDistance = 1.0f;
+            AnglyEyebrowOffset = 0.5f;
+
+            BorderBetweenJoyAndSorrow = 80.0f;
+            MaxAmountOfEyeClosuresUsingSorrow = 90.0f;
+            GradientOfSurpriseAmountSigmoid = 0.12f;
+            GradientOfOpenCloseAmountSigmoid = 0.08f;
+        }
+    }
+
     public class EyeAdapter : EmotionAdapterBase
     {
-        public EyeAdapter(GameObject faceObject, LandmarksPacket landmarksPacket)
-            : base(faceObject, landmarksPacket) { }
+        private EyeParams _prms;
 
-        #region General Properties
+        public EyeAdapter(GameObject faceObject, LandmarksPacket landmarksPacket, EyeParams eyeParams = null)
+            : base(faceObject, landmarksPacket) 
+        {
+            if (eyeParams == null)
+            {
+                _prms = ScriptableObject.CreateInstance<EyeParams>();
+            }
+            else
+            {
+                _prms = eyeParams;
+            }
+        }
 
-        // True makes the right eye close the same amount as the left eye.
-        // This makes VRM Model's eyes less unnatural, but VRM Model won't be able to wink.Å@
-        public bool KeepBothEyesSameMovement { get; set; } = true;
-
-        public bool AlwaysDisplayEyeHighlight { get; set; } = true;
-
-        public bool CanModifyEyeHighlight { get; set; } = true;
-
-        // True : It is easier to express feelings of surprise
-        // False : It is easier to express looking up
-        public bool CanChangeSizeIris { get; set; } = true;
-
-        // If the face is too far from the camera, eyes will move unnaturally.
-        // When the distance is less than this variable, do not move VRM Model's eyes.
-        public float RecognitionLowerLimitDistance { get; set; } = 1.0f;
-
-        // The larger this number, the larger the program will recognize your eyes.
-        // This variable is used to adjust for eye size, which varies by person.
-        public float EyeSizeScale { get; set; } = 1.0f;
-
-        // This number indicates the ease of closing the eye.
-        // When you want to be able to close eyes, this value should be greater than 1.
-        // This makes VRM Model closer to actual human movement.
-        // On the other hand, if you do not want to close eyes completely, this value should be less than 1.
-        public float EaseOfClosingEyes { get; set; } = 1.2f;
-
-        // The larger the number, the easier it is to express surprise.
-        public float SurprisedEyeSizeClampFactor { get; set; } = 1.0f;
-
-        // The larger this value is, the more emphasis the expression of surprise is given.
-        public float ExpressionSurpriseMax { get; set; } = 100.0f;
-
-        public float AnglyEyebrowOffset { get; set; } = 0.5f;
-
-        // Variables for the impression of half-open eyes.
-        // around 0.0 : Cute impression
-        // around 3.0 : Easy to make disgusted eyes, pity impression
-        public float AnglyEyebrowScale { get; set; } = 1.0f;
+        public override void SetParameter(IAdapterParams eyeParams)
+        {
+            _prms = (EyeParams)eyeParams;
+        }
 
         public ReadOnlyCollection<float> GetEyeControlValues()
         {
             return Array.AsReadOnly(_eyeControlValues);
         }
 
-        #endregion
-
-        #region Advanced Properties
-
-        public float BorderBetweenJoyAndSorrow { get; set; } = 80.0f;
-        public float MaxAmountOfEyeClosuresUsingSorrow { get; set; } = 90.0f;
-        public float GradientOfSurpriseAmountSigmoid { get; set; } = 0.12f;
-        public float GradientOfOpenCloseAmountSigmoid { get; set; } = 0.08f;
-
-        #endregion
-
-        /* ### Landmark Index
+        /* Landmark Index
 
             | Index | MP Index |              Part             |
             |:-----:|:--------:|:-----------------------------:|
@@ -97,7 +135,7 @@ namespace Mediapipe.Allocator
             |  15   |   105    |    Center of Left  eyebrow    |
          */
 
-        /* ### Controlling Parameters
+        /* Controlling Parameters
                 
             | Index |  Parameter's Name  |                      Description                      |
             |:-----:|:------------------:|:-----------------------------------------------------:|
@@ -127,7 +165,7 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply()
         {
-            if (AlwaysDisplayEyeHighlight)
+            if (_prms.AlwaysDisplayEyeHighlight)
             {
                 _skinnedMeshRenderer.SetBlendShapeWeight(24, 0.0f);
             }
@@ -136,7 +174,7 @@ namespace Mediapipe.Allocator
 
             // If the face is too far from the camera, eyes will move unnaturally;
             // In this case, do not move the eyes.
-            if (_binocularDistance < RecognitionLowerLimitDistance)
+            if (_binocularDistance < _prms.RecognitionLowerLimitDistance)
             {
                 _skinnedMeshRenderer.SetBlendShapeWeight(18, 0.0f);
                 _skinnedMeshRenderer.SetBlendShapeWeight(19, 0.0f);
@@ -152,12 +190,12 @@ namespace Mediapipe.Allocator
 
             ControlAngly();
 
-            if(!AlwaysDisplayEyeHighlight && CanModifyEyeHighlight)
+            if(!_prms.AlwaysDisplayEyeHighlight && _prms.CanModifyEyeHighlight)
             {
                 _skinnedMeshRenderer.SetBlendShapeWeight(24, Sigmoid(_closedAmount.Max()));
             }
 
-            if (KeepBothEyesSameMovement)
+            if (_prms.KeepBothEyesSameMovement)
             {
                 _joyValue[0] = _joyValue.Min();
                 _joyValue[1] = _joyValue[0];
@@ -183,7 +221,7 @@ namespace Mediapipe.Allocator
 
                 float verticalEyeLength = PlaneDistance(VerticalEyeVector);
 
-                return verticalEyeLength / _binocularDistance * EyeSizeScale * 20.0f;
+                return verticalEyeLength / _binocularDistance * _prms.EyeSizeGain * 20.0f;
             }
 
             for (int eyeIndex = 0; eyeIndex < 2; eyeIndex++) /* 0 : Right Eye, 1 : Left Eye */
@@ -192,16 +230,17 @@ namespace Mediapipe.Allocator
                 _closedAmount[eyeIndex] = BindControlValue(1.0f - _openedAmount[eyeIndex]);
 
                 // Joy
-                _joyValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex] * EaseOfClosingEyes, BorderBetweenJoyAndSorrow, MeshInputMax, GradientOfOpenCloseAmountSigmoid);
+                _joyValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex] * _prms.ClosingEyeGain, _prms.BorderBetweenJoyAndSorrow, MeshInputMax, _prms.GradientOfOpenCloseAmountSigmoid);
 
                 // Sorrow
-                if (_closedAmount[eyeIndex] < BorderBetweenJoyAndSorrow)
+                if (_closedAmount[eyeIndex] < _prms.BorderBetweenJoyAndSorrow)
                 {
-                    _sorrowValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex], MeshInputMin, BorderBetweenJoyAndSorrow, GradientOfOpenCloseAmountSigmoid);
+                    _sorrowValue[eyeIndex] = Sigmoid(_closedAmount[eyeIndex], MeshInputMin, _prms.BorderBetweenJoyAndSorrow, _prms.GradientOfOpenCloseAmountSigmoid);
                 }
                 else
                 {
-                    _sorrowValue[eyeIndex] = MeshInputMax - Sigmoid(_closedAmount[eyeIndex], BorderBetweenJoyAndSorrow, MaxAmountOfEyeClosuresUsingSorrow, GradientOfOpenCloseAmountSigmoid);
+                    _sorrowValue[eyeIndex]
+                        = MeshInputMax - Sigmoid(_closedAmount[eyeIndex], _prms.BorderBetweenJoyAndSorrow, _prms.MaxAmountOfEyeClosuresUsingSorrow, _prms.GradientOfOpenCloseAmountSigmoid);
                 }
             }
         }
@@ -213,17 +252,17 @@ namespace Mediapipe.Allocator
 
             // Defines the size of the eyes.
             // Multiplying by 50 is to make "eyeSize" roughly between 0 - 100 when SurprisedEyeSizeClampFactor == 1.0f
-            float eyeSize = Mathf.Max(_openedAmount[0], _openedAmount[1]) * SurprisedEyeSizeClampFactor * 50.0f;
+            float eyeSize = Mathf.Max(_openedAmount[0], _openedAmount[1]) * _prms.SurprisedEyeSizeGain * 50.0f;
 
             if (eyeSize > 100.0f /* Surprised enough */)
             {
                 _spreadValue = MeshInputMax;
-                _surprisedValue = ExpressionSurpriseMax;
+                _surprisedValue = _prms.ExpressionSurpriseMax;
             }
             else if (eyeSize > 50.0f /* A little surprised */)
             {
-                _spreadValue = Sigmoid(eyeSize, 50.0f, 100.0f, GradientOfSurpriseAmountSigmoid);
-                _surprisedValue = Math.Clamp(_spreadValue, MeshInputMin, ExpressionSurpriseMax);
+                _spreadValue = Sigmoid(eyeSize, 50.0f, 100.0f, _prms.GradientOfSurpriseAmountSigmoid);
+                _surprisedValue = Math.Clamp(_spreadValue, MeshInputMin, _prms.ExpressionSurpriseMax);
             }
             else /* Not surprised */
             {
@@ -231,7 +270,7 @@ namespace Mediapipe.Allocator
                 _surprisedValue = MeshInputMin;
             }
 
-            if (!CanChangeSizeIris)
+            if (!_prms.CanChangeSizeIris)
             {
                 _surprisedValue = MeshInputMin;
             }
@@ -243,9 +282,9 @@ namespace Mediapipe.Allocator
             Vector3 rightEyebrowVector = Landmark(1) - Landmark(15);
 
             float eyebrowToEyeLengthAverage = (PlaneDistance(leftEyebrowVector) + PlaneDistance(rightEyebrowVector)) * 0.5f;
-            float eyebrowToEyeLengthRatio = eyebrowToEyeLengthAverage / _binocularDistance - AnglyEyebrowOffset;
+            float eyebrowToEyeLengthRatio = eyebrowToEyeLengthAverage / _binocularDistance - _prms.AnglyEyebrowOffset;
 
-            _anglyValue = BindControlValue(- eyebrowToEyeLengthRatio, AnglyEyebrowScale * 3.0f /* Make the SurpriseEyebrowScale roughly 0 - 3 */);
+            _anglyValue = BindControlValue(- eyebrowToEyeLengthRatio, _prms.AnglyEyebrowGain * 3.0f /* Make the SurpriseEyebrowScale roughly 0 - 3 */);
         }
 
         private void Adapt()

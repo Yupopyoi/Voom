@@ -18,6 +18,11 @@ namespace Mediapipe.Allocator
         Dictionary<string, Vector3> GetNamedVectors();
     }
 
+    public interface IAdapterParams
+    {
+        public void ResetToDefaults();
+    }
+
     public struct LandmarksPacket
     {
         public List<Tasks.Components.Containers.NormalizedLandmark> Landmarks { get; private set; }

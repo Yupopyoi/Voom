@@ -8,51 +8,82 @@ using UnityEngine;
 
 namespace Mediapipe.Allocator
 {
+    [CreateAssetMenu(menuName = "Emotion/MouthParams", fileName = "MouthParams")]
+    public class MouthParams : ScriptableObject, IAdapterParams
+    {
+        [Header("Overall")]
+        [Range(0f, 2f)] public float OverallOperatingGain = 1.0f;
+
+        [Header("Offset")]
+        [Range(0f, 5f)] public float MouthSizeOffset = 1.0f;
+        [Range(0f, 5f)] public float SurpriseEyebrowOffset = 1.0f;
+        [Range(-1f, 1f)] public float MouthPositionOffset = 0.0f;
+
+        [Header("Gain")]
+        [Range(0f, 2f)] public float VerticalOpenGain = 1.0f;
+        [Range(0f, 2f)] public float HorizontalMouthSizeGain = 1.0f;
+        [Range(0f, 2f)] public float SorrowGain = 1.0f;
+        [Range(0f, 2f)] public float FunnyGain = 1.0f;
+        [Range(0f, 2f)] public float AngryGain = 1.0f;
+        [Range(0f, 2f)] public float SurpriseEyebrowGain = 1.0f;
+        [Range(0f, 2f)] public float MouthPositionGain = 1.0f;
+
+        [Header("Max / Min")]
+        [Range(0f, 100f)] public float OverallOpenMax = 100.0f;
+        [Range(0f, 100f)] public float VerticalOpenMax = 70.0f;
+        [Range(0f, 100f)] public float SorrowMax = 100.0f;
+        [Range(0f, 100f)] public float FunnyMax = 80.0f;
+        [Range(0f, 100f)] public float AngryMax = 100.0f;
+        [Range(0f, 100f)] public float MouthPositionMin = 20.0f;
+
+        public void ResetToDefaults()
+        {
+            OverallOperatingGain = 1.0f;
+
+            MouthSizeOffset = 1.0f;
+            SurpriseEyebrowOffset = 1.0f;
+            MouthPositionOffset = 0.0f;
+
+            VerticalOpenGain = 1.0f;
+            HorizontalMouthSizeGain = 1.0f;
+            SorrowGain = 1.0f;
+            FunnyGain = 1.0f;
+            AngryGain = 1.0f;
+            SurpriseEyebrowGain = 1.0f;
+            MouthPositionGain = 1.0f;
+
+            OverallOpenMax = 100.0f;
+            VerticalOpenMax = 70.0f;
+            SorrowMax = 100.0f;
+            FunnyMax = 80.0f;
+            AngryMax = 100.0f;
+            MouthPositionMin = 20.0f;
+        }
+    }
 
     public class MouthAdapter : EmotionAdapterBase
     {
-        public MouthAdapter(GameObject faceObject, LandmarksPacket landmarksPacket)
-            : base(faceObject, landmarksPacket) { }
+        private MouthParams _prms;
 
-        #region General Properties
+        public MouthAdapter(GameObject faceObject, LandmarksPacket landmarksPacket, MouthParams mouthParams = null)
+            : base(faceObject, landmarksPacket)
+        {
+            if (mouthParams == null)
+            {
+                _prms = ScriptableObject.CreateInstance<MouthParams>();
+            }
+            else
+            {
+                _prms = mouthParams;
+            }
+        }
 
-        public float OverallOperatingScale { get; set; } = 1.0f;
+        public override void SetParameter(IAdapterParams mouthParams)
+        {
+            _prms = (MouthParams)mouthParams;
+        }
 
-        public float HorizontalMouthSizeScale { get; set; } = 1.0f;
-
-        public float SensitivityVerticalOpen { get; set; } = 1.0f;
-
-        public float SensitivitySorrow { get; set; } = 1.0f;
-
-        public float SensitivityFunny { get; set; } = 1.0f;
-
-        public float SensitivityAngry { get; set; } = 1.0f;
-
-        public float VerticalOpenMax { get; set; } = 70.0f;
-
-        public float SorrowMax { get; set; } = 100.0f;
-
-        public float OverallOpenMax { get; set; } = 100.0f;
-
-        public float FunnyMax { get; set; } = 80.0f;
-
-        public float AnglyMax { get; set; } = 100.0f;
-
-        public float MouthSizeOffset { get; set; } = 1.0f;
-
-        public float SurpriseEyebrowOffset { get; set; } = 1.0f;
-
-        public float SurpriseEyebrowScale { get; set; } = 1.0f;
-
-        public float MouthPositionOffset { get; set; } = 0.0f;
-
-        public float MouthPositionGain { get; set; } = 85.0f;
-
-        public float MouthPositionMin { get; set; } = 20.0f;
-
-        #endregion
-
-        /* ### Landmark Index
+        /* Landmark Index
 
             | Index | MP Index |              Part             |
             |:-----:|:--------:|:-----------------------------:|
@@ -70,11 +101,11 @@ namespace Mediapipe.Allocator
             |  10   |   468    |           Right eye           |
             |:-----:|:--------:|:-----------------------------:|
             |  11   |   334    |    Center of Left  eyebrow    |
-            |  12   |   105    |    Center of Right eyebrow    
+            |  12   |   105    |    Center of Right eyebrow    |
         |
          */
 
-        /* ### Controlling Parameters
+        /* Controlling Parameters
                 
             | Index |  Parameter's Name  |                     Description                    |
             |:-----:|:------------------:|:--------------------------------------------------:|
@@ -83,24 +114,28 @@ namespace Mediapipe.Allocator
             |   34  |  Fcl_MTH_Sorrow    |  General-purpose mouth opening control (Horizontal)|
             |   32  |  Fcl_MTH_Fun       |  Raise the corner of mouth                         |
             |   28  |  Fcl_MTH_Angly     |  Droop the corner of mouth                         |
+            |   26  |  Fcl_MTH_Up        |  Position of mouth                                 |
+            |   27  |  Fcl_MTH_Down      |  Position of mouth                                 |
 
          */
 
-        float _binocularDistance;
-        float _verticalOpening;
-        float _horizontalLength;
-        float _funnyValue;
-        float _anglyValue;
-        float _surpriseValue;
-        float _downValue;
+        private float _binocularDistance;
+        private float _verticalOpening;
+        private float _horizontalLength;
+        private float _funnyValue;
+        private float _anglyValue;
+        private float _surpriseValue;
+        private float _downValue;
 
         public override void ForwardApply()
         {
             Vector3 binocularVector = Landmark(9) - Landmark(10);
             _binocularDistance = PlaneDistance(binocularVector);
 
+            // Calculate _verticalOpening, _horizontalLength
             CalculateGeneralOpeningAmount();
 
+            // Calculate _funnyValue, _anglyValue 
             CalculateRaisingCornersAmount();
 
             CalculateSurpriseAmount();
@@ -109,11 +144,11 @@ namespace Mediapipe.Allocator
 
             Adapt();
 
-            // Local functions
+            #region Local functions
 
             // Numeric literals defined within these local functions are intended
             // to make the properties "clean numbers", such as 1.0f
-            
+
             void CalculateGeneralOpeningAmount()
             {
 
@@ -122,7 +157,7 @@ namespace Mediapipe.Allocator
                     Vector3 verticalMouthVector = Landmark(0) - Landmark(1);
                     float verticalMouthLength = PlaneDistance(verticalMouthVector);
 
-                    return BindControlValue(verticalMouthLength / _binocularDistance, SensitivityVerticalOpen, VerticalOpenMax);
+                    return BindControlValue(verticalMouthLength / _binocularDistance, _prms.VerticalOpenGain, _prms.VerticalOpenMax);
                 }
 
                 float Sorrow()
@@ -130,9 +165,10 @@ namespace Mediapipe.Allocator
                     Vector3 horizontalMouthVector = Landmark(2) - Landmark(3);
                     float horizontalMouthLength = PlaneDistance(horizontalMouthVector);
 
-                    float adjustedLength = (_binocularDistance - horizontalMouthLength * HorizontalMouthSizeScale * 1.6f) / horizontalMouthLength;
+                    // 1.6f is multiplied to set the property's default value to 1.0.
+                    float adjustedLength = (_binocularDistance - horizontalMouthLength * _prms.HorizontalMouthSizeGain * 1.6f) / horizontalMouthLength;
 
-                    return BindControlValue(adjustedLength, SensitivitySorrow * 0.5f, SorrowMax);
+                    return BindControlValue(adjustedLength, _prms.SorrowGain * 0.5f, _prms.SorrowMax);
                 }
 
                 float v = VerticalOpening();
@@ -141,7 +177,7 @@ namespace Mediapipe.Allocator
                 // Adjustment of vertical/horizontal opening amount
                 // This prevents the mouth from opening too wide, which would be unnatural.
                 float sum = v + h;
-                float adjustedRatio = sum > OverallOpenMax ? (OverallOpenMax / sum) : 1.0f;
+                float adjustedRatio = sum > _prms.OverallOpenMax ? (_prms.OverallOpenMax / sum) : 1.0f;
 
                 _verticalOpening = v * adjustedRatio;
                 _horizontalLength = h * adjustedRatio;
@@ -152,20 +188,22 @@ namespace Mediapipe.Allocator
                 Vector3 leftRaisingCorner = Landmark(0) - Landmark(2);
                 Vector3 rightRaisingCorner = Landmark(0) - Landmark(3);
 
-                float raisingCornerLengthAverage = (PlaneDistance(leftRaisingCorner) + PlaneDistance(rightRaisingCorner)) * 0.5f;
-                float raisingCornerLengthRatio = raisingCornerLengthAverage / _binocularDistance - MouthSizeOffset * 0.2f;
+                float raisingCornerLengthAverage = (PlaneDistance(leftRaisingCorner) + PlaneDistance(rightRaisingCorner)) * 0.5f; // Average
+                float raisingCornerLengthRatio = raisingCornerLengthAverage / _binocularDistance - _prms.MouthSizeOffset * 0.2f;
 
                 float correctionValueOfCorners = ((100.0f - _verticalOpening) / 100.0f) * ((100.0f - _horizontalLength) / 100.0f);
 
                 if (raisingCornerLengthRatio > 0.0f /* Funny */)
                 {
-                    _funnyValue = BindControlValue(raisingCornerLengthRatio, SensitivityFunny * 17.5f, FunnyMax) * correctionValueOfCorners;
+                    // 17.5f is multiplied to set the property's default value to 1.0.
+                    _funnyValue = BindControlValue(raisingCornerLengthRatio, _prms.FunnyGain * 17.5f, _prms.FunnyMax) * correctionValueOfCorners;
                     _anglyValue = 0.0f;
                 }
                 else /* Angly */
                 {
+                    // 22.5f is multiplied to set the property's default value to 1.0.
+                    _anglyValue = BindControlValue(- raisingCornerLengthRatio - 0.05f, _prms.AngryGain * 22.5f, _prms.AngryMax) * correctionValueOfCorners;
                     _funnyValue = 0.0f;
-                    _anglyValue = BindControlValue(- raisingCornerLengthRatio - 0.05f, SensitivityAngry * 22.5f, AnglyMax) * correctionValueOfCorners;
                 }
             }
 
@@ -175,9 +213,10 @@ namespace Mediapipe.Allocator
                 Vector3 rightEyebrowVector = Landmark(10) - Landmark(12);
 
                 float eyebrowToEyeLengthAverage = (PlaneDistance(leftEyebrowVector) + PlaneDistance(rightEyebrowVector)) * 0.5f;
-                float eyebrowToEyeLengthRatio = eyebrowToEyeLengthAverage / _binocularDistance - SurpriseEyebrowOffset * 0.7f;
+                float eyebrowToEyeLengthRatio = eyebrowToEyeLengthAverage / _binocularDistance - _prms.SurpriseEyebrowOffset * 0.7f;
 
-                _surpriseValue = BindControlValue(eyebrowToEyeLengthRatio, SurpriseEyebrowScale * 3.0f, 1.0f);
+                // 3.0f is multiplied to set the property's default value to 1.0.
+                _surpriseValue = BindControlValue(eyebrowToEyeLengthRatio, _prms.SurpriseEyebrowGain * 3.0f, 1.0f);
             }
 
             void CalculateMouthDownAmount()
@@ -195,29 +234,30 @@ namespace Mediapipe.Allocator
                 // This number is normally around 4.0, and during chewing movements , it is around 5.0.
                 float distanceRatio = PlaneDistance(vectorMouthToEyes) / _binocularDistance;
 
-                float standardizedDistanceRatio = distanceRatio / 4.0f + MouthPositionOffset;
+                float standardizedDistanceRatio = distanceRatio / 4.0f + _prms.MouthPositionOffset;
 
-                _downValue = (standardizedDistanceRatio - 1.0f) * MouthPositionGain;
+                // 80.0f is multiplied to set the property's default value to 1.0.
+                _downValue = (standardizedDistanceRatio - 1.0f) * _prms.MouthPositionGain * 80.0f;
             }
 
             void Adapt()
             {
 
-                _skinnedMeshRenderer.SetBlendShapeWeight(33 /* Fcl_MTH_Joy */ , _verticalOpening * (1.0f - _surpriseValue) * 1.4f * OverallOperatingScale);
+                _skinnedMeshRenderer.SetBlendShapeWeight(33 /* Fcl_MTH_Joy */ , _verticalOpening * (1.0f - _surpriseValue) * 1.4f * _prms.OverallOperatingGain);
 
-                _skinnedMeshRenderer.SetBlendShapeWeight(35 /* Fcl_MTH_Surprised */, _verticalOpening * _surpriseValue * 0.5f * OverallOperatingScale);
+                _skinnedMeshRenderer.SetBlendShapeWeight(35 /* Fcl_MTH_Surprised */, _verticalOpening * _surpriseValue * 0.5f * _prms.OverallOperatingGain);
 
-                _skinnedMeshRenderer.SetBlendShapeWeight(34 /* Fcl_MTH_Sorrow */ , _horizontalLength * OverallOperatingScale);
+                _skinnedMeshRenderer.SetBlendShapeWeight(34 /* Fcl_MTH_Sorrow */ , _horizontalLength * _prms.OverallOperatingGain);
 
-                _skinnedMeshRenderer.SetBlendShapeWeight(32 /* Fcl_MTH_Fun */ , _funnyValue * OverallOperatingScale);
+                _skinnedMeshRenderer.SetBlendShapeWeight(32 /* Fcl_MTH_Fun */ , _funnyValue * _prms.OverallOperatingGain);
 
-                _skinnedMeshRenderer.SetBlendShapeWeight(28 /* Fcl_MTH_Angry */ , _anglyValue * OverallOperatingScale);
+                _skinnedMeshRenderer.SetBlendShapeWeight(28 /* Fcl_MTH_Angry */ , _anglyValue * _prms.OverallOperatingGain);
 
                 if(_downValue > 0.0f)
                 {
                     _skinnedMeshRenderer.SetBlendShapeWeight(26 /* Fcl_MTH_Up   */ , 0.0f);
                     _skinnedMeshRenderer.SetBlendShapeWeight(27 /* Fcl_MTH_Down */ , 
-                                                            (_downValue > MouthPositionMin) ? MouthPositionMin : _downValue);
+                                                            (_downValue > _prms.MouthPositionMin) ? _prms.MouthPositionMin : _downValue);
                 }
                 else
                 {
@@ -226,6 +266,8 @@ namespace Mediapipe.Allocator
                 }
 
             }
+
+            #endregion
         }
     }
 }// namespace Mediapipe.Allocator

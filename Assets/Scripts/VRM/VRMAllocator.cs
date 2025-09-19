@@ -28,8 +28,10 @@ namespace VRMController
         FaceAdaptationManager _faceAdaptationManager;
         HandAdaptationManager _handAdaptationManager;
 
-        [SerializeField] OperationDimension _operationDimension;
-        [SerializeField] Sleeve _sleeve;
+        [SerializeField] private FaceParams _faceParams;
+
+        [SerializeField] private OperationDimension _operationDimension;
+        [SerializeField] private Sleeve _sleeve;
 
         public OperationDimension OperationDimension => _operationDimension;
 
@@ -57,6 +59,8 @@ namespace VRMController
             _poseAdaptationManager.Dimension = _operationDimension;
             _faceAdaptationManager.Dimension = _operationDimension;
             _handAdaptationManager.Dimension = _operationDimension;
+
+            _faceAdaptationManager.UpdateParameters(_faceParams);
 
             _poseAdaptationManager.AllocatePacketAndAdapter();
             _handAdaptationManager.AllocatePacketAndAdapter();

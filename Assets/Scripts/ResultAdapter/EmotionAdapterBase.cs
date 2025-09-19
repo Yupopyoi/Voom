@@ -11,6 +11,7 @@ namespace Mediapipe.Allocator
     interface IEmotionAdapter
     {
         void ForwardApply();
+        void SetParameter(IAdapterParams parameter);
     }
 
     public abstract class EmotionAdapterBase : IEmotionAdapter
@@ -94,5 +95,6 @@ namespace Mediapipe.Allocator
         }
 
         public abstract void ForwardApply();
+        public abstract void SetParameter(IAdapterParams parameter);
     }
 } // namespace Mediapipe.Allocator

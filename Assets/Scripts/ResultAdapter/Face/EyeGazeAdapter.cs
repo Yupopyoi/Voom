@@ -8,6 +8,48 @@ using UnityEngine;
 
 namespace Mediapipe.Allocator
 {
+    [CreateAssetMenu(menuName = "Emotion/EyeGazeParams", fileName = "EyeGazeParams")]
+    public class EyeGazeParams : ScriptableObject, IAdapterParams
+    {
+        [Header("General")]
+        public bool CanDrawIrisMovement = true;
+        public bool CanDrawIrisUpDownMovement = false;
+        [Tooltip("It is more natural to set this variable to true.")]
+        public bool KeepBothEyesSameUpDownMovement = true;
+
+        [Header("X-Axis Max")]
+        [Range(0f, 0.1f)] public float InnerMostValue = 0.012f;
+        [Range(0f, 0.1f)] public float OuterMostValue = 0.021f;
+
+        [Header("Y-Axis Max")]
+        [Range(0f, 0.1f)] public float UpperMostValue = 0.06f;
+        [Range(0f, 0.1f)] public float LowerMostValue = 0.05f;
+
+        [Header("Gains")]
+        [Range(0f, 2f)] public float LeftRightMovementGain = 1.0f;
+        [Range(0f, 2f)] public float UpDownMovementGain = 1.0f;
+
+        [Header("Center Position")]
+        [Range(0f, 1f)] public float CenterOfLeftRightMovement = 0.55f;
+        [Range(0f, 1f)] public float CenterOfUpDownMovement = 0.1f;
+
+        public void ResetToDefaults()
+        {
+            CanDrawIrisMovement = true;
+            CanDrawIrisUpDownMovement = false;
+            KeepBothEyesSameUpDownMovement = true;
+
+            InnerMostValue = 0.012f;
+            OuterMostValue = 0.021f;
+            UpperMostValue = 0.06f;
+            LowerMostValue = 0.05f;
+            LeftRightMovementGain = 1.0f;
+            UpDownMovementGain = 1.0f;
+            CenterOfLeftRightMovement = 0.55f;
+            CenterOfUpDownMovement = 0.1f;
+        }
+    }
+
     public class EyeGazeAdapter : EmotionAdapterBase
     {
         readonly Transform _rightIris;
@@ -19,35 +61,9 @@ namespace Mediapipe.Allocator
         Vector3 _rightEyePosition;
         Vector3 _leftEyePosition;
 
-        #region General Properties
+        private EyeGazeParams _prms;
 
-        public bool CanDrawIrisMovement { get; set; } = true;
-
-        public bool CanDrawIrisUpDownMovement { get; set; } = false;
-
-        // It is more natural to set this variable to true.
-        public bool KeepBothEyesSameUpDownMovement { get; set; } = true;
-
-        // X-Axis
-        public float InnerMostValue { get; set; } = 0.012f;
-        public float OuterMostValue { get; set; } = 0.021f;
-
-        // Y-Axis
-        public float UpperMostValue { get; set; } = 0.06f;
-        public float LowerMostValue { get; set; } = 0.05f;
-
-        // Sensitivity & Center Position
-        public float SensitivityLeftRightMovement { get; set; } = 1.0f;
-
-        public float CenterOfLeftRightMovement { get; set; } = 0.55f;
-
-        public float SensitivityUpDownMovement { get; set; } = 1.0f;
-
-        public float CenterOfUpDownMovement { get; set; } = 0.1f;
-
-        #endregion
-
-        public EyeGazeAdapter(GameObject faceObject, LandmarksPacket landmarksPacket, GameObject rightIris, GameObject leftIris)
+        public EyeGazeAdapter(GameObject faceObject, LandmarksPacket landmarksPacket, GameObject rightIris, GameObject leftIris, EyeGazeParams eyeGazeParams = null)
             : base(faceObject, landmarksPacket) 
         { 
             _rightIris = rightIris.transform;
@@ -58,9 +74,23 @@ namespace Mediapipe.Allocator
 
             _rightEyePosition = _rightIris.localPosition;
             _leftEyePosition = _leftIris.localPosition;
+
+            if (eyeGazeParams == null)
+            {
+                _prms = ScriptableObject.CreateInstance<EyeGazeParams>();
+            }
+            else
+            {
+                _prms = eyeGazeParams;
+            }
         }
 
-        /* ### Landmark Index
+        public override void SetParameter(IAdapterParams eyeGazeParams)
+        {
+            _prms = (EyeGazeParams)eyeGazeParams;
+        }
+
+        /* Landmark Index
 
         | Index | MP Index |              Part             |
         |:-----:|:--------:|:-----------------------------:|
@@ -83,7 +113,7 @@ namespace Mediapipe.Allocator
 
         public override void ForwardApply()
         {
-            if (!CanDrawIrisMovement)
+            if (!_prms.CanDrawIrisMovement)
             {
                 _rightIris.localPosition = _rightEyeInitPosition;
                 _leftIris.localPosition = _leftEyeInitPosition;
@@ -113,9 +143,9 @@ namespace Mediapipe.Allocator
                 float flip = (eyeIndex == 0 /* Right Eye */) ? 1.0f : -1.0f;
 
                 // Stretching the value to the left and right around 0.5
-                float leftRightPositionRatio = Mathf.Clamp01((horizontalIrisEyeVector.x / horizontalEyeVector.x - CenterOfLeftRightMovement) * SensitivityLeftRightMovement * 3.0f + 0.5f);
+                float leftRightPositionRatio = Mathf.Clamp01((horizontalIrisEyeVector.x / horizontalEyeVector.x - _prms.CenterOfLeftRightMovement) * _prms.LeftRightMovementGain * 3.0f + 0.5f);
 
-                float absLocalPosition = (OuterMostValue - InnerMostValue) * leftRightPositionRatio + InnerMostValue;
+                float absLocalPosition = (_prms.OuterMostValue - _prms.InnerMostValue) * leftRightPositionRatio + _prms.InnerMostValue;
 
                 return absLocalPosition * flip;
             }
@@ -144,14 +174,14 @@ namespace Mediapipe.Allocator
                 }
 
                 // Stretching the value to the left and right around 0.5
-                float leftRightPositionRatio = Mathf.Clamp01((vertivalIrisEyeVector.y / vertivalEyeVector.y - CenterOfUpDownMovement) * SensitivityUpDownMovement * 7.0f + 0.5f);
+                float leftRightPositionRatio = Mathf.Clamp01((vertivalIrisEyeVector.y / vertivalEyeVector.y - _prms.CenterOfUpDownMovement) * _prms.UpDownMovementGain * 7.0f + 0.5f);
 
-                float localPosition = (UpperMostValue - LowerMostValue) * (1.0f - leftRightPositionRatio) + LowerMostValue;
+                float localPosition = (_prms.UpperMostValue - _prms.LowerMostValue) * (1.0f - leftRightPositionRatio) + _prms.LowerMostValue;
 
                 return localPosition;
             }
 
-            if(CanDrawIrisUpDownMovement)
+            if(_prms.CanDrawIrisUpDownMovement)
             {
                 _rightEyePosition.y = UpDownPosition(0);
                 _leftEyePosition.y = UpDownPosition(1);
@@ -162,7 +192,7 @@ namespace Mediapipe.Allocator
                 _leftEyeInitPosition.y = _leftIris.localPosition.y;
             }
 
-            if(KeepBothEyesSameUpDownMovement)
+            if(_prms.KeepBothEyesSameUpDownMovement)
             {
                 float max = Mathf.Max(_rightEyePosition.y, _leftEyePosition.y);
                 _rightEyePosition.y = max;

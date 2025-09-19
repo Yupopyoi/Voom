@@ -9,10 +9,34 @@ using Mediapipe.Tasks.Vision.FaceLandmarker;
 
 namespace Mediapipe.Allocator
 {
+    [CreateAssetMenu(menuName = "Emotion/FaceParams", fileName = "FaceParams")]
+    public class FaceParams : ScriptableObject, IAdapterParams
+    {
+        public MouthParams MouthParams;
+        public EyeParams EyeParams;
+        public EyebrowParams EyebrowParams;
+        public EyeGazeParams EyeGazeParams;
+        public CatEarParams CatEarParams;
+
+        public void ResetToDefaults()
+        {
+            MouthParams = CreateInstance<MouthParams>();
+            EyeParams = CreateInstance<EyeParams>();
+            EyebrowParams = CreateInstance<EyebrowParams>();
+            EyeGazeParams = CreateInstance<EyeGazeParams>();
+            CatEarParams = CreateInstance<CatEarParams>();
+        }
+    }
+
     public class FaceAdaptationManager : AdaptationManagerBase<FaceLandmarkerResult>, IAdaptationManager<FaceLandmarkerResult>
     {
+        // Parameters
+        FaceParams _faceParams;
+
+        // Object
         GameObject _faceObject; 
 
+        // Packets and Adapters
         LandmarksPacket _mouthPacket;
         MouthAdapter _mouthAdapter;
 
@@ -53,6 +77,24 @@ namespace Mediapipe.Allocator
 
             _catEarPacket = new(_landmarks, new int[0]);
             _catEarAdapter = new(FindChildByName("J_Opt_R_CatEar1_01"), FindChildByName("J_Opt_L_CatEar1_01"), _catEarPacket, _eyeAdapter.GetEyeControlValues());
+        }
+
+        public void UpdateParameters(FaceParams faceParams = null)
+        {
+            if (faceParams == null)
+            {
+                _faceParams = CreateInstance<FaceParams>();
+            }
+            else
+            {
+                _faceParams = faceParams;
+            }
+
+            _mouthAdapter.SetParameter(_faceParams.MouthParams);
+            _eyeAdapter.SetParameter(_faceParams.EyeParams);
+            _eyebrowAdapter.SetParameter(_faceParams.EyebrowParams);
+            _eyeGazeAdapter.SetParameter(_faceParams.EyeGazeParams);
+            _catEarAdapter.SetParameter(faceParams.CatEarParams);
         }
 
         public override void ApplyMediapipeResult(FaceLandmarkerResult recognitionResult)

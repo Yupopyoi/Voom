@@ -357,7 +357,7 @@ namespace Mediapipe.Allocator
 
         protected static Quaternion ContinuousAngleValue(Quaternion rawQuaternion, float thresholdAngleValue = 180.0f)
         {
-            Vector3 eulerAngles = ContinuousAngleValue(rawQuaternion.eulerAngles);
+            Vector3 eulerAngles = ContinuousAngleValue(rawQuaternion.eulerAngles, thresholdAngleValue);
 
             return Quaternion.Euler(eulerAngles);
         }
@@ -452,7 +452,7 @@ namespace Mediapipe.Allocator
             if (projectionVector == default) projectionVector = Vector2.up;
 
             // Convert to Vector2
-            Vector2 spineVectorProjectedXYPlane = new Vector2(partVector.x, partVector.y).normalized;
+            Vector2 spineVectorProjectedXYPlane = (Vector2)partVector.normalized;
 
             return CalculateLocalRotation(spineVectorProjectedXYPlane, projectionVector, sign, offset, isDebug);
         }
@@ -466,7 +466,7 @@ namespace Mediapipe.Allocator
 
             if (isDebug)
             {
-                string message = $"V : {partVector.ToString()}, Dot : {cos:F2} , Rot : {localRotation:F2} deg";
+                string message = $"V : {partVector}, Dot : {cos:F2} , Rot : {localRotation:F2} deg";
                 GameLogger.Log(message);
             }
 
@@ -478,10 +478,10 @@ namespace Mediapipe.Allocator
         /// </summary>
         /// <param name="q"></param>
         /// <param name="isDebug"></param>
-        protected void ApplyRotation(Quaternion q, bool isDebug = false)
+        protected void ApplyRotation(Quaternion q)
         {
             AddQuaternionCache(q);
-            Quaternion averageQuaternion = AverageQuaternion(isDebug);
+            Quaternion averageQuaternion = AverageQuaternion();
 
             if (_partObject != null)
             {
@@ -500,7 +500,7 @@ namespace Mediapipe.Allocator
             _quaternionCache.Enqueue(q);
         }
 
-        private Quaternion AverageQuaternion(bool isDebug = false)
+        private Quaternion AverageQuaternion()
         {
             if (_quaternionCache.Count == 0)
             {
