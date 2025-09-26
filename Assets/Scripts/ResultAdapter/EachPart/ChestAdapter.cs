@@ -8,12 +8,15 @@ namespace Mediapipe.Allocator
             : base(partObject, landmarksPacket) { }
 
         /*  [Landmark Index]
-         * 
-         *    Call Index    Mediapipe Index         Part
-         *        0               11           left  shoulder
-         *        1               12           right shoulder
-         *        2               23             left  hip
-         *        3               24             right hip
+         
+            | Index | MP Index |              Part             |
+            |:-----:|:--------:|:-----------------------------:|
+            |   0   |    11    |         Left  shoulder        |
+            |   1   |    12    |         Right shoulder        |
+            |   2   |    23    |           Left  hip           |
+            |   3   |    24    |           Right hip           |
+            |   4   |    13    |          Left  elbow          |
+            |   5   |    14    |          Right elbow          |
          */
 
         /// <summary>
@@ -33,6 +36,8 @@ namespace Mediapipe.Allocator
         // Points
         private Vector3 _leftShoulder;
         private Vector3 _rightShoulder;
+        private Vector3 _leftElbow;
+        private Vector3 _rightElbow;
         private Vector3 _leftHip;
         private Vector3 _rightHip;
 
@@ -46,6 +51,8 @@ namespace Mediapipe.Allocator
 
             _leftShoulder = Landmark(0);
             _rightShoulder = Landmark(1);
+            _leftElbow = Landmark(4);
+            _rightElbow = Landmark(5);
 
             if (Is2D())
             {
@@ -53,6 +60,12 @@ namespace Mediapipe.Allocator
                 // This is defined by the direction in which "Shoulder Vector" is looking in global space.
                 
                 Vector3 shoulderVector = (_leftShoulder - _rightShoulder).normalized;
+
+                Vector3 leftArmVector  = (_leftShoulder  - _leftElbow ).normalized;
+                Vector3 rightArmVector = (_rightShoulder - _rightElbow).normalized;
+
+                // The larger this value is, the more the Rotation.Y value needs to be corrected to a larger value.
+                float DiffYDimBetweenBothArms = Mathf.Abs((leftArmVector.y - rightArmVector.y) * 0.5f); // Range [0, 1]
 
                 Quaternion rotation = Quaternion.FromToRotation(Vector3.right, shoulderVector);
                 
@@ -65,12 +78,13 @@ namespace Mediapipe.Allocator
                 else
                 {
                     eulerAngles.y = ToSmoothStair(ContinuousAngleValue(eulerAngles.y), 
-                                                  90.0f / RotationalResistanceAroundYaxis, 0.02f) * RotationalResistanceAroundYaxis;
+                                                  90.0f / RotationalResistanceAroundYaxis) * RotationalResistanceAroundYaxis;
                 }
 
                 // Not applicable
                 eulerAngles.x = 0;
                 eulerAngles.z = 0;
+                eulerAngles.y += DiffYDimBetweenBothArms * 20.0f;
 
                 ApplyRotation(PreventUnwantedRotation(Quaternion.Euler(eulerAngles)));
                 return;

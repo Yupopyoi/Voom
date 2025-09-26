@@ -98,7 +98,7 @@ namespace Mediapipe.Allocator
             _hipPacket = new(_landmarks, new int[4] { 23, 24, 11, 12 });
             _hipAdapter = new(FindChildByName("Hip"), _hipPacket);
 
-            _chestPacket = new(_landmarks, new int[5] { 11, 12, 23, 24, 0 });
+            _chestPacket = new(_landmarks, new int[6] { 11, 12, 23, 24, 13, 14 });
             _chestAdapter = new(FindChildByName("Chest"), _chestPacket);
 
             _leftArmPacket = new(_landmarks, new int[6] { 11, 13, 12, 15, 23, 24 });

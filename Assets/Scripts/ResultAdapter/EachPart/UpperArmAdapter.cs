@@ -31,10 +31,8 @@ namespace Mediapipe.Allocator
         {
             if (Is2D())
             {
-
                 Vector3 armVector = (Landmark(1) - Landmark(0)).normalized;
-
-
+                //GameLogger.Log(armVector);
 
                 static float EulerAngleZ(Vector3 armVector)
                 {
@@ -51,7 +49,6 @@ namespace Mediapipe.Allocator
 
                     float cos = Vector2.Dot(spineVectorProjectedXZPlane, Vector2.up);
 
-                    //GameLogger.Log(cos);
                     return Mathf.Acos(cos) * Mathf.Rad2Deg;
                 }
 

@@ -8,13 +8,16 @@ namespace Mediapipe.Allocator
                                                             : base(partObject, landmarksPacket) {}
 
         /*  [Landmark Index]
-         * 
-         *    Call Index    Mediapipe Index         Part
-         *        0               23             left  hip
-         *        1               24             right hip
-　　　　 *        2               11           left  shoulder
-         *        3               12           right shoulder
-         */
+
+            | Index | MP Index |          Part           |
+            |:-----:|:--------:|:-----------------------:|
+            |   0   |    23    |        Left  hip        |
+            |   1   |    24    |        Right hip        |
+            |   2   |    11    |      Left  shoulder     |
+            |   3   |    12    |      Right shoulder     |
+            |   4   |    13    |       Left  elbow       |
+            |   5   |    14    |       Right elbow       |
+        */
 
         // Points
         Vector3 _leftHip;
